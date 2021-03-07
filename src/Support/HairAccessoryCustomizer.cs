@@ -182,6 +182,12 @@ namespace CharacterAccessory
 						return _instance;
 					}
 				}
+
+				internal void UpdateAccessories(bool _updateHairInfo = true) // false would actually work
+				{
+					if (!_installed) return;
+					Traverse.Create(_pluginCtrl).Method("UpdateAccessories", new object[] { _updateHairInfo }).GetValue();
+				}
 #if DEBUG
 				internal void DumpInfo(bool local)
 				{

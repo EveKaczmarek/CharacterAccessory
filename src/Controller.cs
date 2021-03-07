@@ -192,10 +192,10 @@ namespace CharacterAccessory
 
 				if (CharaStudio.Running)
 				{
-					if (CfgStudioFastReload.Value)
-						FastReload(false);
-					else
+					if (CfgStudioFallbackReload.Value)
 						BigReload();
+					else
+						FastReload();
 				}
 				else
 				{
@@ -227,6 +227,7 @@ namespace CharacterAccessory
 				yield return new WaitForEndOfFrame();
 				yield return new WaitForEndOfFrame();
 
+				HairAccessoryCustomizer.UpdateAccessories(false);
 				//AccStateSync.SyncAllAccToggle();
 				CharaStudio.RefreshCharaStatePanel();
 				MoreAccessoriesSupport.UpdateStudioUI(ChaControl);

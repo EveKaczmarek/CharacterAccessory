@@ -25,7 +25,7 @@ namespace CharacterAccessory
 	{
 		public const string GUID = "madevil.kk.ca";
 		public const string PluginName = "Character Accessory";
-		public const string Version = "1.0.1.0";
+		public const string Version = "1.0.2.0";
 
 		internal static new ManualLogSource Logger;
 		internal static CharacterAccessory Instance;
@@ -33,7 +33,7 @@ namespace CharacterAccessory
 
 		internal static ConfigEntry<bool> CfgMakerMasterSwitch { get; set; }
 		internal static ConfigEntry<bool> CfgDebugMode { get; set; }
-		internal static ConfigEntry<bool> CfgStudioFastReload { get; set; }
+		internal static ConfigEntry<bool> CfgStudioFallbackReload { get; set; }
 		internal static ConfigEntry<bool> CfgMAHookUpdateStudioUI { get; set; }
 
 		internal const int RefMax = 7;
@@ -45,7 +45,7 @@ namespace CharacterAccessory
 			Instance = this;
 
 			CfgMakerMasterSwitch = Config.Bind("Maker", "Master Switch", true, new ConfigDescription("A quick switch on the sidebar that templary disable the function", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
-			CfgStudioFastReload = Config.Bind("Studio", "Fast Reload", false, new ConfigDescription("Disabled by default because some plugins are having visual problem", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
+			CfgStudioFallbackReload = Config.Bind("Studio", "Fallback Reload Mode", false, new ConfigDescription("Enable this if some plugins are having visual problem", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
 			CfgDebugMode = Config.Bind("Debug", "Debug Mode", false, new ConfigDescription("Showing debug messages in LogWarning level", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
 			CfgMAHookUpdateStudioUI = Config.Bind("Hook", "MoreAccessories UpdateStudioUI", true, new ConfigDescription("Performance tweak, disable it if having issue on studio chara state panel update", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
 

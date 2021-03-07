@@ -130,7 +130,7 @@ namespace CharacterAccessory
 
 					CharacterAccessoryController _pluginCtrl = GetController(CurOCIChar);
 					if (_pluginCtrl == null) return;
-					_pluginCtrl.FastReload(false);
+					_pluginCtrl.FastReload();
 				});
 #endif
 			}

@@ -6,6 +6,8 @@ using UnityEngine;
 using UniRx;
 using MessagePack;
 
+using BepInEx.Logging;
+using HarmonyLib;
 using Sideloader.AutoResolver;
 
 namespace CharacterAccessory
@@ -35,10 +37,8 @@ namespace CharacterAccessory
 					}
 				}
 
-				HairAccessoryCustomizer.Backup();
-				MaterialEditor.Backup();
-				MaterialRouter.Backup();
-				AccStateSync.Backup();
+				foreach (string _name in SupportList)
+					Traverse.Create(this).Field(_name).Method("Backup").GetValue();
 			}
 
 			internal static void MigrateData(ref ResolveInfo extResolve)
@@ -74,7 +74,7 @@ namespace CharacterAccessory
 
 			internal IEnumerator RestorePartsInfoCoroutine()
 			{
-				Logger.LogWarning($"[RestoreCoroutine][{ChaControl.GetFullname()}] fired");
+				DebugMsg(LogLevel.Warning, $"[RestoreCoroutine][{ChaControl.GetFullname()}] fired");
 
 				yield return new WaitForEndOfFrame();
 				yield return new WaitForEndOfFrame();
@@ -88,16 +88,14 @@ namespace CharacterAccessory
 				ReferralIndex = RefMax;
 				PartsInfo.Clear();
 				PartsResolveInfo.Clear();
-				HairAccessoryCustomizer.Reset();
-				MaterialEditor.Reset();
-				MaterialEditor._texData.Clear();
-				MaterialRouter.Reset();
-				AccStateSync.Reset();
+
+				foreach (string _name in SupportList)
+					Traverse.Create(this).Field(_name).Method("Reset").GetValue();
 			}
 
 			internal void RestorePartsInfo()
 			{
-				Logger.LogWarning($"[RestorePartsInfo][{ChaControl.GetFullname()}] fired");
+				DebugMsg(LogLevel.Warning, $"[RestorePartsInfo][{ChaControl.GetFullname()}] fired");
 
 				if (!DuringLoading)
 					return;
@@ -136,12 +134,8 @@ namespace CharacterAccessory
 				}
 				else
 				{
-					HairAccessoryCustomizer.Restore();
-					MaterialEditor.Restore();
-					MaterialRouter.Restore();
-					AccStateSync.Restore();
-
-					TaskUnlock();
+					foreach (string _name in SupportList)
+						Traverse.Create(this).Field(_name).Method("Restore").GetValue();
 
 					ChaControl.StartCoroutine(RefreshCoroutine());
 				}
@@ -149,7 +143,7 @@ namespace CharacterAccessory
 
 			internal IEnumerator RestorePluginSettingCoroutine()
 			{
-				Logger.LogWarning($"[RestorePluginSettingCoroutine][{ChaControl.GetFullname()}] fired");
+				DebugMsg(LogLevel.Warning, $"[RestorePluginSettingCoroutine][{ChaControl.GetFullname()}] fired");
 
 				yield return new WaitForEndOfFrame();
 				yield return new WaitForEndOfFrame();
@@ -159,14 +153,10 @@ namespace CharacterAccessory
 
 			internal void RestorePluginSetting()
 			{
-				Logger.LogWarning($"[RestorePluginSetting][{ChaControl.GetFullname()}] fired");
+				DebugMsg(LogLevel.Warning, $"[RestorePluginSetting][{ChaControl.GetFullname()}] fired");
 
-				HairAccessoryCustomizer.Restore();
-				MaterialEditor.Restore();
-				MaterialRouter.Restore();
-				AccStateSync.Restore();
-
-				TaskUnlock();
+				foreach (string _name in SupportList)
+					Traverse.Create(this).Field(_name).Method("Restore").GetValue();
 
 				ChaControl.StartCoroutine(RefreshCoroutine());
 			}

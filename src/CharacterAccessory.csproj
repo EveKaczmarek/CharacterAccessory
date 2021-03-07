@@ -72,6 +72,7 @@
     <Compile Include="Extension.cs" />
     <Compile Include="Studio.cs" />
     <Compile Include="Support\MoreAccessories.cs" />
+    <Compile Include="Support\DynamicBoneEditor.cs" />
     <Compile Include="Support\HairAccessoryCustomizer.cs" />
     <Compile Include="Support\MaterialEditor.cs" />
     <Compile Include="Support\MaterialRouter.cs" />

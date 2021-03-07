@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -6,6 +7,7 @@ using System.Reflection;
 using ParadoxNotion.Serialization;
 
 using BepInEx;
+using BepInEx.Logging;
 using HarmonyLib;
 
 using KKAPI.Chara;
@@ -17,10 +19,10 @@ namespace CharacterAccessory
 	{
 		internal static class AccStateSyncSupport
 		{
-			internal static BaseUnityPlugin _instance = null;
-			internal static bool _installed = false;
-			internal static bool _legacy = false;
-			internal static Dictionary<string, Type> _types = new Dictionary<string, Type>();
+			private static BaseUnityPlugin _instance = null;
+			private static bool _installed = false;
+			private static bool _legacy = false;
+			private static Dictionary<string, Type> _types = new Dictionary<string, Type>();
 
 			internal static void Init()
 			{
@@ -37,22 +39,17 @@ namespace CharacterAccessory
 					}
 
 					_installed = true;
+					SupportList.Add("AccStateSync");
 
-					_types["AccStateSyncController"] = _instance.GetType().Assembly.GetType("AccStateSync.AccStateSync+AccStateSyncController");
-					_types["AccTriggerInfo"] = _instance.GetType().Assembly.GetType("AccStateSync.AccStateSync+AccTriggerInfo");
+					Assembly _assembly = _instance.GetType().Assembly;
+					_types["AccStateSyncController"] = _assembly.GetType("AccStateSync.AccStateSync+AccStateSyncController");
+					_types["AccTriggerInfo"] = _assembly.GetType("AccStateSync.AccStateSync+AccTriggerInfo");
 
 					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("SetAccessoryStateAll", AccessTools.all, null, new[] { typeof(bool) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
 					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("SyncAllAccToggle", AccessTools.all, null, new Type[0], null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
 					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("AccSlotChangedHandler", AccessTools.all, null, new[] { typeof(int) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
 					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("ToggleByClothesState", AccessTools.all, null, new[] { typeof(int), typeof(int) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
 					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("ToggleByShoesType", AccessTools.all, null, new[] { typeof(int), typeof(int) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
-#if DEBUG
-					Logger.LogWarning($"[SetAccessoryStateAll][{_types["AccStateSyncController"].GetMethod("SetAccessoryStateAll", AccessTools.all, null, new[] { typeof(bool) }, null) == null}]");
-					Logger.LogWarning($"[SyncAllAccToggle][{_types["AccStateSyncController"].GetMethod("SyncAllAccToggle", AccessTools.all, null, new Type[0], null) == null}]");
-					Logger.LogWarning($"[AccSlotChangedHandler][{_types["AccStateSyncController"].GetMethod("AccSlotChangedHandler", AccessTools.all, null, new[] { typeof(int) }, null) == null}]");
-					Logger.LogWarning($"[ToggleByClothesState][{_types["AccStateSyncController"].GetMethod("ToggleByClothesState", AccessTools.all, null, new[] { typeof(int), typeof(int) }, null) == null}]");
-					Logger.LogWarning($"[ToggleByShoesType][{_types["AccStateSyncController"].GetMethod("ToggleByShoesType", AccessTools.all, null, new[] { typeof(int), typeof(int) }, null) == null}]");
-#endif
 				}
 			}
 
@@ -84,10 +81,10 @@ namespace CharacterAccessory
 				internal Dictionary<int, string> Save()
 				{
 					if (!_installed) return null;
-					Dictionary<int, string> ContainerJson = new Dictionary<int, string>();
+					Dictionary<int, string> _json = new Dictionary<int, string>();
 					foreach (KeyValuePair<int, object> x in _charaAccData)
-						ContainerJson[x.Key] = JSONSerializer.Serialize(_types["AccTriggerInfo"], x.Value);
-					return ContainerJson;
+						_json[x.Key] = JSONSerializer.Serialize(_types["AccTriggerInfo"], x.Value);
+					return _json;
 				}
 
 				internal void Load(Dictionary<int, string> _json)
@@ -103,19 +100,22 @@ namespace CharacterAccessory
 				internal void Backup()
 				{
 					if (!_installed) return;
+
 					_charaAccData.Clear();
 
 					CharacterAccessoryController _controller = CharacterAccessory.GetController(_chaCtrl);
 					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
 					List<int> _slots = _controller.PartsInfo.Keys.ToList();
-					Logger.LogWarning($"[AccStateSync][Backup][slots: {string.Join(",", _slots.Select(x => x.ToString()).ToArray())}]");
-
+#if DEBUG
+					DebugMsg(LogLevel.Warning, $"[AccStateSync][Backup][{_chaCtrl.GetFullname()}][slots: {string.Join(",", _slots.Select(x => x.ToString()).ToArray())}]");
+#endif
 					object OutfitTriggerInfo = Traverse.Create(_pluginCtrl).Field("CharaTriggerInfo").GetValue().RefElementAt(_coordinateIndex);
 					if (OutfitTriggerInfo == null) return;
 
 					object Parts = Traverse.Create(OutfitTriggerInfo).Property("Parts").GetValue();
 					List<int> _keys = Traverse.Create(Parts).Property("Keys").GetValue<ICollection<int>>().ToList();
-					Logger.LogWarning($"[AccStateSync][Backup][keys: {string.Join(",", _keys.Select(x => x.ToString()).ToArray())}]");
+					//List<int> _keys = new List<int>((Parts as IDictionary).Keys as ICollection<int>);
+					DebugMsg(LogLevel.Warning, $"[AccStateSync][Backup][{_chaCtrl.GetFullname()}][keys: {string.Join(",", _keys.Select(x => x.ToString()).ToArray())}]");
 					foreach (int _slotIndex in _keys)
 					{
 						object x = Parts.RefTryGetValue(_slotIndex);
@@ -131,16 +131,16 @@ namespace CharacterAccessory
 				internal void Restore()
 				{
 					if (!_installed) return;
-					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
 
-					object CharaTriggerInfo = Traverse.Create(_pluginCtrl).Field("CharaTriggerInfo").GetValue();
-					object OutfitTriggerInfo = CharaTriggerInfo.RefElementAt(_coordinateIndex);
+					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
+					object OutfitTriggerInfo = Traverse.Create(_pluginCtrl).Field("CharaTriggerInfo").GetValue().RefElementAt(_coordinateIndex);
 					if (OutfitTriggerInfo == null) return;
 
+					Traverse _traverse = Traverse.Create(OutfitTriggerInfo).Property("Parts");
+					object Parts = _traverse.GetValue();
 					foreach (KeyValuePair<int, object> x in _charaAccData)
 					{
-						Traverse _traverse = Traverse.Create(OutfitTriggerInfo).Property("Parts");
-						if (_traverse.GetValue().RefTryGetValue(x.Key) != null)
+						if (Parts.RefTryGetValue(x.Key) != null)
 							_traverse.Method("Remove", new object[] { x.Key }).GetValue();
 						_traverse.Method("Add", new object[] { x.Key, x.Value.JsonClone() }).GetValue();
 					}
@@ -155,14 +155,15 @@ namespace CharacterAccessory
 					object _dst = CharaTriggerInfo.RefElementAt((int) ev.CopyDestination);
 					if (_src == null || _dst == null) return;
 
-					object srcOutfitTriggerInfo = Traverse.Create(_src).Property("Parts").GetValue();
+					object _srcOutfitTriggerInfo = Traverse.Create(_src).Property("Parts").GetValue();
+					object _dstOutfitTriggerInfo = Traverse.Create(_dst).Property("Parts").GetValue();
 					Traverse _traverseDst = Traverse.Create(_dst).Property("Parts");
 					foreach (int _slotIndex in ev.CopiedSlotIndexes)
 					{
-						if (_traverseDst.GetValue().RefTryGetValue(_slotIndex) != null)
+						if (_dstOutfitTriggerInfo.RefTryGetValue(_slotIndex) != null)
 							_traverseDst.Method("Remove", new object[] { _slotIndex }).GetValue();
 
-						object _copy = srcOutfitTriggerInfo.RefTryGetValue(_slotIndex);
+						object _copy = _srcOutfitTriggerInfo.RefTryGetValue(_slotIndex);
 						if (_copy == null) continue;
 
 						_traverseDst.Method("Add", new object[] { _slotIndex, _copy.JsonClone() }).GetValue();
@@ -179,17 +180,23 @@ namespace CharacterAccessory
 					if (OutfitTriggerInfo == null) return;
 
 					object Parts = Traverse.Create(OutfitTriggerInfo).Property("Parts").GetValue();
-					object x = Parts.RefTryGetValue(ev.SourceSlotIndex);
-					if (x == null) return;
-					object _copy = x.JsonClone();
+					object AccTriggerInfo = Parts.RefTryGetValue(ev.SourceSlotIndex);
+					if (AccTriggerInfo == null) return;
+
+					object _copy = AccTriggerInfo.JsonClone();
 					Traverse.Create(_copy).Property("Slot").SetValue(ev.DestinationSlotIndex);
 					Traverse.Create(Parts).Method("Add", new object[] { ev.DestinationSlotIndex, _copy }).GetValue();
 				}
 
-				internal void RemovePartsInfo(int _slotIndex)
+				internal void RemovePartsInfo(int _slotIndex) => RemovePartsInfo(_chaCtrl.fileStatus.coordinateType, _slotIndex);
+				internal void RemovePartsInfo(int _coordinateIndex, int _slotIndex)
 				{
 					if (!_installed) return;
-					Traverse.Create(_pluginCtrl).Field("CurOutfitTriggerInfo").Property("Parts").Method("Remove", new object[] { _slotIndex }).GetValue();
+
+					object OutfitTriggerInfo = Traverse.Create(_pluginCtrl).Field("CharaTriggerInfo").GetValue().RefElementAt(_coordinateIndex);
+					if (OutfitTriggerInfo == null) return;
+
+					Traverse.Create(OutfitTriggerInfo).Property("Parts").Method("Remove", new object[] { _slotIndex }).GetValue();
 				}
 
 				internal void InitCurOutfitTriggerInfo(string _caller)
@@ -198,10 +205,10 @@ namespace CharacterAccessory
 					Traverse.Create(_pluginCtrl).Method("InitCurOutfitTriggerInfo", new object[] { _caller }).GetValue();
 				}
 
-				internal void SetAccessoryStateAll()
+				internal void SetAccessoryStateAll(bool _show = true)
 				{
 					if (!_installed) return;
-					Traverse.Create(_pluginCtrl).Method("SetAccessoryStateAll", new object[] { true }).GetValue();
+					Traverse.Create(_pluginCtrl).Method("SetAccessoryStateAll", new object[] { _show }).GetValue();
 				}
 
 				internal void SyncAllAccToggle()

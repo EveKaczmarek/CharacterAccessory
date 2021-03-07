@@ -1,15 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Events;
-using UniRx;
-using ParadoxNotion.Serialization;
-using MessagePack;
+using UnityEngine.SceneManagement;
 using Studio;
+using UniRx;
 
+using BepInEx;
+using BepInEx.Logging;
 using HarmonyLib;
 
 using KKAPI.Studio;
@@ -57,12 +59,12 @@ namespace CharacterAccessory
 					return;
 				}
 
-				if (Studio.Studio.Instance.dicInfo.TryGetValue(_node, out ObjectCtrlInfo info))
+				if (Studio.Studio.Instance.dicInfo.TryGetValue(_node, out ObjectCtrlInfo _info))
 				{
-					CurTreeNodeObjID = StudioObjectExtensions.GetSceneId(info);
+					CurTreeNodeObjID = StudioObjectExtensions.GetSceneId(_info);
 					if (OldTreeNodeObjID != CurTreeNodeObjID)
 					{
-						OCIChar selected = info as OCIChar;
+						OCIChar selected = _info as OCIChar;
 						if (selected?.GetType() != null)
 							CurOCIChar = selected;
 						else
@@ -71,9 +73,19 @@ namespace CharacterAccessory
 				}
 			}
 
+			internal static void StartupCheck(Scene _scene, LoadSceneMode _loadSceneMode)
+			{
+#if DEBUG
+				DebugMsg(LogLevel.Warning, $"[StartupCheck][{_scene.name}][{_loadSceneMode}]");
+#endif
+				if (!Loaded && _scene.name == "Studio")
+					RegisterStudioControls();
+			}
+
 			internal static void RegisterStudioControls()
 			{
 				if (!Running) return;
+
 				Loaded = true;
 
 				List<string> coordinateList = Enum.GetNames(typeof(ChaFileDefine.CoordinateType)).ToList();
@@ -95,6 +107,69 @@ namespace CharacterAccessory
 					_pluginCtrl.SetReferralIndex(_value);
 				});
 				StudioAPI.GetOrCreateCurrentStateCategory("CharaAcc").AddControl(StudioDropdownRef);
+
+				SceneManager.sceneLoaded -= StartupCheck;
+#if DEBUG
+				ScrollRect charalist = SetupList("StudioScene/Canvas Main Menu/02_Manipulate/00_Chara/00_Root");
+				CreateCharaButton("tglReload", "Reload", charalist, () =>
+				{
+					OCIChar CurOCIChar = CharaStudio.CurOCIChar;
+					if ((CurOCIChar == null) || (CurOCIChar.charInfo == null))
+						return;
+
+					CharacterAccessoryController _pluginCtrl = GetController(CurOCIChar);
+					if (_pluginCtrl == null) return;
+					_pluginCtrl.BigReload();
+				});
+
+				CreateCharaButton("tglQuickReload", "Quick Reload", charalist, () =>
+				{
+					OCIChar CurOCIChar = CharaStudio.CurOCIChar;
+					if ((CurOCIChar == null) || (CurOCIChar.charInfo == null))
+						return;
+
+					CharacterAccessoryController _pluginCtrl = GetController(CurOCIChar);
+					if (_pluginCtrl == null) return;
+					_pluginCtrl.FastReload(false);
+				});
+#endif
+			}
+
+			internal static ScrollRect SetupList(string goPath)
+			{
+				GameObject listObject = GameObject.Find(goPath);
+				ScrollRect scrollRect = listObject.GetComponent<ScrollRect>();
+				scrollRect.content.gameObject.GetOrAddComponent<VerticalLayoutGroup>();
+				scrollRect.content.gameObject.GetOrAddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+				scrollRect.scrollSensitivity = 25;
+
+				foreach (Transform item in scrollRect.content.transform)
+				{
+					LayoutElement layoutElement = item.gameObject.GetOrAddComponent<LayoutElement>();
+					layoutElement.preferredHeight = 40;
+				}
+
+				return scrollRect;
+			}
+
+			internal static Button CreateCharaButton(string name, string label, ScrollRect scrollRect, UnityAction onClickEvent)
+			{
+				return CreateButton(name, label, scrollRect, onClickEvent, "StudioScene/Canvas Main Menu/02_Manipulate/00_Chara/00_Root/Viewport/Content/State");
+			}
+
+			internal static Button CreateButton(string name, string label, ScrollRect scrollRect, UnityAction onClickEvent, string goPath)
+			{
+				GameObject template = GameObject.Find(goPath);
+				GameObject newObject = Instantiate(template, scrollRect.content.transform);
+				newObject.name = name;
+				Text textComponent = newObject.GetComponentInChildren<Text>();
+				textComponent.text = label;
+				Button buttonComponent = newObject.GetComponent<Button>();
+				for (int i = 0; i < buttonComponent.onClick.GetPersistentEventCount(); i++)
+					buttonComponent.onClick.SetPersistentListenerState(i, UnityEventCallState.Off);
+				buttonComponent.onClick.RemoveAllListeners();
+				buttonComponent.onClick.AddListener(onClickEvent);
+				return buttonComponent;
 			}
 		}
 	}

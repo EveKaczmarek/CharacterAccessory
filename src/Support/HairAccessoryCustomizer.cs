@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 using UnityEngine;
 using ParadoxNotion.Serialization;
 
 using BepInEx;
+using BepInEx.Logging;
 using HarmonyLib;
 
 using KKAPI.Chara;
@@ -17,9 +19,9 @@ namespace CharacterAccessory
 	{
 		internal static class HairAccessoryCustomizerSupport
 		{
-			internal static BaseUnityPlugin _instance = null;
-			internal static bool _installed = false;
-			internal static Dictionary<string, Type> _types = new Dictionary<string, Type>();
+			private static BaseUnityPlugin _instance = null;
+			private static bool _installed = false;
+			private static Dictionary<string, Type> _types = new Dictionary<string, Type>();
 
 			internal static void Init()
 			{
@@ -29,9 +31,11 @@ namespace CharacterAccessory
 				if (_instance != null)
 				{
 					_installed = true;
+					SupportList.Add("HairAccessoryCustomizer");
 
-					_types["HairAccessoryController"] = _instance.GetType().Assembly.GetType("KK_Plugins.HairAccessoryCustomizer+HairAccessoryController");
-					_types["HairAccessoryInfo"] = _instance.GetType().Assembly.GetType("KK_Plugins.HairAccessoryCustomizer+HairAccessoryController+HairAccessoryInfo");
+					Assembly _assembly = _instance.GetType().Assembly;
+					_types["HairAccessoryController"] = _assembly.GetType("KK_Plugins.HairAccessoryCustomizer+HairAccessoryController");
+					_types["HairAccessoryInfo"] = _assembly.GetType("KK_Plugins.HairAccessoryCustomizer+HairAccessoryController+HairAccessoryInfo");
 
 					HooksInstance["General"].Patch(_types["HairAccessoryController"].GetMethod("UpdateAccessories", AccessTools.all, null, new[] { typeof(bool) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
 				}
@@ -66,17 +70,17 @@ namespace CharacterAccessory
 				{
 					if (!_installed) return null;
 
-					Dictionary<int, string> ContainerJson = new Dictionary<int, string>();
+					Dictionary<int, string> _json = new Dictionary<int, string>();
 					foreach (KeyValuePair<int, object> x in _charaAccData)
 					{
 						FakeHairAccessoryInfo _info = new FakeHairAccessoryInfo(x.Value);
-						ContainerJson[x.Key] = JSONSerializer.Serialize(typeof(FakeHairAccessoryInfo), _info);
+						_json[x.Key] = JSONSerializer.Serialize(typeof(FakeHairAccessoryInfo), _info);
 #if DEBUG
-						Logger.LogWarning($"[{x.Key}]\n{DisplayObjectInfo(_info)}\n\n");
+						DebugMsg(LogLevel.Debug, $"[HairAccessoryCustomizer][Save][{_chaCtrl.GetFullname()}][{x.Key}]\n{DisplayObjectInfo(_info)}\n\n");
 #endif
 					}
 
-					return ContainerJson;
+					return _json;
 				}
 
 				internal void Load(Dictionary<int, string> _json)
@@ -88,16 +92,9 @@ namespace CharacterAccessory
 					foreach (KeyValuePair<int, string> x in _json)
 					{
 						FakeHairAccessoryInfo _info = JSONSerializer.Deserialize<FakeHairAccessoryInfo>(x.Value);
-						object _instance = Activator.CreateInstance(_types["HairAccessoryInfo"]);
-						Traverse _traverse = Traverse.Create(_instance);
-						_traverse.Field<bool>("HairGloss").Value = _info.HairGloss;
-						_traverse.Field<bool>("ColorMatch").Value = _info.ColorMatch;
-						_traverse.Field<Color>("OutlineColor").Value = _info.OutlineColor;
-						_traverse.Field<Color>("AccessoryColor").Value = _info.AccessoryColor;
-						_traverse.Field<float>("HairLength").Value = _info.HairLength;
-						_charaAccData[x.Key] = _instance;
+						_charaAccData[x.Key] = _info.Convert();
 #if DEBUG
-						Logger.LogWarning($"[{x.Key}][_charaAccData]\n{DisplayObjectInfo(_charaAccData[x.Key])}\n\n");
+						DebugMsg(LogLevel.Debug, $"[HairAccessoryCustomizer][Load][{_chaCtrl.GetFullname()}][{x.Key}]\n{DisplayObjectInfo(_charaAccData[x.Key])}\n\n");
 #endif
 					}
 				}
@@ -112,12 +109,12 @@ namespace CharacterAccessory
 					List<int> _keys = Traverse.Create(_pluginCtrl).Field("HairAccessories").Property("Keys").GetValue<ICollection<int>>().ToList();
 					if (_keys.IndexOf(_coordinateIndex) < 0) return;
 					object _hairAccessoryInfos = Traverse.Create(_pluginCtrl).Field("HairAccessories").Method("get_Item", new object[] { _coordinateIndex }).GetValue();
-					//Logger.LogWarning($"[HairAccessoryCustomizer][Backup][HairAccessories.Count: {Traverse.Create(HairAccessories).Property("Count").GetValue<int>()}]");
-					//Logger.LogWarning($"[HairAccessoryCustomizer][Backup][_hairAccessoryInfos.Count: {Traverse.Create(_hairAccessoryInfos).Property("Count").GetValue<int>()}]");
+					//DebugMsg(LogLevel.Warning, $"[HairAccessoryCustomizer][Backup][HairAccessories.Count: {Traverse.Create(HairAccessories).Property("Count").GetValue<int>()}]");
+					//DebugMsg(LogLevel.Warning, $"[HairAccessoryCustomizer][Backup][_hairAccessoryInfos.Count: {Traverse.Create(_hairAccessoryInfos).Property("Count").GetValue<int>()}]");
 					if (_hairAccessoryInfos == null) return;
 
 					List<int> _slots = Traverse.Create(_hairAccessoryInfos).Property("Keys").GetValue<ICollection<int>>().ToList();
-					//Logger.LogWarning($"[HairAccessoryCustomizer][Backup][keys: {string.Join(",", _slots.Select(x => x.ToString()).ToArray())}]");
+					//DebugMsg(LogLevel.Warning, $"[HairAccessoryCustomizer][Backup][keys: {string.Join(",", _slots.Select(x => x.ToString()).ToArray())}]");
 					foreach (int _slotIndex in _slots)
 					{
 						if (!MoreAccessoriesSupport.IsHairAccessory(_chaCtrl, _slotIndex)) continue;
@@ -145,11 +142,11 @@ namespace CharacterAccessory
 					{
 						if (_hairAccessoryInfos.RefTryGetValue(x.Key) != null)
 						{
-							Logger.LogDebug($"[HairAccessoryCustomizer][Restore] remove HairAccessoryInfo on Slot{x.Key + 1:00}");
+							DebugMsg(LogLevel.Warning, $"[HairAccessoryCustomizer][Restore][{_chaCtrl.GetFullname()}][{x.Key}] remove HairAccessoryInfo");
 							Traverse.Create(_hairAccessoryInfos).Method("Remove", new object[] { x.Key }).GetValue();
 						}
 #if DEBUG
-						Logger.LogWarning($"Slot{x.Key + 1:00}\n{DisplayObjectInfo(x.Value)}");
+						DebugMsg(LogLevel.Warning, $"[HairAccessoryCustomizer][Restore][{_chaCtrl.GetFullname()}][{x.Key}]\n{DisplayObjectInfo(x.Value)}");
 #endif
 						Traverse.Create(_hairAccessoryInfos).Method("Add", new object[] { x.Key, x.Value.JsonClone() }).GetValue();
 					}
@@ -171,6 +168,18 @@ namespace CharacterAccessory
 						OutlineColor = _traverse.Field("OutlineColor").GetValue<Color>();
 						AccessoryColor = _traverse.Field("AccessoryColor").GetValue<Color>();
 						HairLength = _traverse.Field("HairLength").GetValue<float>();
+					}
+
+					public object Convert()
+					{
+						object _instance = Activator.CreateInstance(_types["HairAccessoryInfo"]);
+						Traverse _traverse = Traverse.Create(_instance);
+						_traverse.Field<bool>("HairGloss").Value = HairGloss;
+						_traverse.Field<bool>("ColorMatch").Value = ColorMatch;
+						_traverse.Field<Color>("OutlineColor").Value = OutlineColor;
+						_traverse.Field<Color>("AccessoryColor").Value = AccessoryColor;
+						_traverse.Field<float>("HairLength").Value = HairLength;
+						return _instance;
 					}
 				}
 #if DEBUG

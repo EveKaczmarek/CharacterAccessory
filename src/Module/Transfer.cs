@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 using UnityEngine;
 
+using BepInEx.Logging;
+using HarmonyLib;
+
 using KKAPI.Maker;
 
 namespace CharacterAccessory
@@ -13,7 +16,7 @@ namespace CharacterAccessory
 		{
 			internal IEnumerator TransferPartsInfoCoroutine()
 			{
-				Logger.LogWarning($"[TransferPartsInfoCoroutine][{ChaControl.GetFullname()}] fired");
+				DebugMsg(LogLevel.Warning, $"[TransferPartsInfoCoroutine][{ChaControl.GetFullname()}] fired");
 
 				yield return new WaitForEndOfFrame();
 				yield return new WaitForEndOfFrame();
@@ -35,19 +38,17 @@ namespace CharacterAccessory
 				{
 					int srcIndex = QueueList[i].srcSlot;
 					int dstIndex = QueueList[i].dstSlot;
-					Logger.LogInfo($"[TransferPartsInfo][{ChaControl.GetFullname()}][{srcIndex}][{dstIndex}]");
+					DebugMsg(LogLevel.Warning, $"[TransferPartsInfo][{ChaControl.GetFullname()}][{srcIndex}][{dstIndex}]");
 					AccessoryTransferEventArgs ev = new AccessoryTransferEventArgs(srcIndex, dstIndex);
 
 					MoreAccessoriesSupport.TransferPartsInfo(ChaControl, ev);
 					MoreAccessoriesSupport.RemovePartsInfo(ChaControl, CurrentCoordinateIndex, srcIndex);
-					HairAccessoryCustomizer.TransferPartsInfo(ev);
-					HairAccessoryCustomizer.RemovePartsInfo(srcIndex);
-					MaterialEditor.TransferPartsInfo(ev);
-					MaterialEditor.RemovePartsInfo(srcIndex);
-					AccStateSync.TransferPartsInfo(ev);
-					AccStateSync.RemovePartsInfo(srcIndex);
-					MaterialRouter.TransferPartsInfo(ev);
-					MaterialRouter.RemovePartsInfo(srcIndex);
+
+					foreach (string _name in SupportList)
+					{
+						Traverse.Create(this).Field(_name).Method("TransferPartsInfo", new object[] { ev }).GetValue();
+						Traverse.Create(this).Field(_name).Method("RemovePartsInfo", new object[] { srcIndex }).GetValue();
+					}
 				}
 
 				if (ReferralIndex < 7)

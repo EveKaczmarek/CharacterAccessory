@@ -2,10 +2,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 using ParadoxNotion.Serialization;
 
 using BepInEx;
+using BepInEx.Logging;
 using HarmonyLib;
 
 using KKAPI.Chara;
@@ -17,9 +19,9 @@ namespace CharacterAccessory
 	{
 		internal static class MaterialRouterSupport
 		{
-			internal static BaseUnityPlugin _instance = null;
-			internal static bool _installed = false;
-			internal static Dictionary<string, Type> _types = new Dictionary<string, Type>();
+			private static BaseUnityPlugin _instance = null;
+			private static bool _installed = false;
+			private static Dictionary<string, Type> _types = new Dictionary<string, Type>();
 
 			internal static void Init()
 			{
@@ -29,8 +31,11 @@ namespace CharacterAccessory
 				if (_instance != null)
 				{
 					_installed = true;
-					_types["MaterialRouterController"] = _instance.GetType().Assembly.GetType("MaterialRouter.MaterialRouter+MaterialRouterController");
-					_types["RouteRule"] = _instance.GetType().Assembly.GetType("MaterialRouter.MaterialRouter+RouteRule");
+					SupportList.Add("MaterialRouter");
+
+					Assembly _assembly = _instance.GetType().Assembly;
+					_types["MaterialRouterController"] = _assembly.GetType("MaterialRouter.MaterialRouter+MaterialRouterController");
+					_types["RouteRule"] = _assembly.GetType("MaterialRouter.MaterialRouter+RouteRule");
 				}
 			}
 
@@ -90,11 +95,11 @@ namespace CharacterAccessory
 					List<int> _slots = _controller.PartsInfo.Keys.ToList();
 
 					object OutfitTriggers = Traverse.Create(_pluginCtrl).Field("OutfitTriggers").GetValue();
-					//Logger.LogWarning($"[MaterialRouter][Backup][OutfitTriggers.Count: {(OutfitTriggers as IDictionary).Count}]");
+					//DebugMsg(LogLevel.Warning, $"[MaterialRouter][Backup][{_chaCtrl.GetFullname()}][OutfitTriggers.Count: {(OutfitTriggers as IDictionary).Count}]");
 
 					object CurOutfitTrigger = OutfitTriggers.RefTryGetValue(_coordinateIndex);
 					if (CurOutfitTrigger == null) return;
-					//Logger.LogWarning($"[MaterialRouter][Backup][CurOutfitTrigger.Count: {(CurOutfitTrigger as IList).Count}]");
+					//DebugMsg(LogLevel.Warning, $"[MaterialRouter][Backup][CurOutfitTrigger.Count: {(CurOutfitTrigger as IList).Count}]");
 
 					int n = (CurOutfitTrigger as IList).Count;
 					for (int i = 0; i < n; i++)
@@ -103,7 +108,7 @@ namespace CharacterAccessory
 						string _path = Traverse.Create(_rule).Property("GameObjectPath").GetValue<string>();
 						if (!_path.Contains($"/ca_slot")) continue;
 
-						//Logger.LogWarning($"[MaterialRouter][Backup][{_path}]");
+						//DebugMsg(LogLevel.Warning, $"[MaterialRouter][Backup][{_chaCtrl.GetFullname()}][{_path}]");
 						foreach (int _slotIndex in _slots)
 						{
 							if (!_path.Contains($"/ca_slot{_slotIndex:00}/")) continue;
@@ -111,7 +116,7 @@ namespace CharacterAccessory
 							_charaAccData.Add(_rule.JsonClone());
 						}
 					}
-					//Logger.LogWarning($"[MaterialRouter][Backup][{_charaAccData.Count}]");
+					//DebugMsg(LogLevel.Warning, $"[MaterialRouter][Backup][{_chaCtrl.GetFullname()}][{_charaAccData.Count}]");
 				}
 
 				internal void Restore()

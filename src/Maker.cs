@@ -45,12 +45,6 @@ namespace CharacterAccessory
 				_pluginCtrl.FunctionEnable = value;
 			});
 
-			args.AddControl(new MakerButton("Transfer", category, this)).OnClick.AddListener(delegate
-			{
-				if (_pluginCtrl.DuringLoading) return;
-				_pluginCtrl.PrepareQueue();
-			});
-
 			args.AddControl(new MakerButton("Backup", category, this)).OnClick.AddListener(delegate
 			{
 				if (_pluginCtrl.DuringLoading) return;
@@ -77,6 +71,18 @@ namespace CharacterAccessory
 				MakerToggleEnable.Value = _pluginCtrl.FunctionEnable;
 			});
 #if DEBUG
+			args.AddControl(new MakerButton("Transfer", category, this)).OnClick.AddListener(delegate
+			{
+				if (_pluginCtrl.DuringLoading) return;
+				if (_pluginCtrl.ReferralIndex > 6)
+				{
+					Logger.LogMessage("Please choose a coordinate other than CharaAcc as referral");
+					return;
+				}
+				_pluginCtrl.TaskLock();
+				_pluginCtrl.PrepareQueue();
+			});
+
 			args.AddControl(new MakerButton("Hair info (local)", category, this)).OnClick.AddListener(delegate
 			{
 				_pluginCtrl.HairAccessoryCustomizer.DumpInfo(true);

@@ -5,6 +5,9 @@ using System.Linq;
 using UnityEngine;
 using UniRx;
 
+using BepInEx.Logging;
+using HarmonyLib;
+
 using KKAPI.Maker;
 
 namespace CharacterAccessory
@@ -40,7 +43,7 @@ namespace CharacterAccessory
 					if (PartsInfo[i].type > 120)
 						SlotIndexes.Add(i);
 				}
-				Logger.LogInfo($"[CopyPartsInfo][{ChaControl.GetFullname()}][Slots: {string.Join(",", SlotIndexes.Select(Slot => Slot.ToString()).ToArray())}]");
+				DebugMsg(LogLevel.Warning, $"[CopyPartsInfo][{ChaControl.GetFullname()}][Slots: {string.Join(",", SlotIndexes.Select(Slot => Slot.ToString()).ToArray())}]");
 				AccessoryCopyEventArgs ev = new AccessoryCopyEventArgs(SlotIndexes, (ChaFileDefine.CoordinateType) ReferralIndex, (ChaFileDefine.CoordinateType) CurrentCoordinateIndex);
 
 				MoreAccessoriesSupport.CopyPartsInfo(ChaControl, ev);
@@ -53,12 +56,8 @@ namespace CharacterAccessory
 				}
 				else
 				{
-					HairAccessoryCustomizer.CopyPartsInfo(ev);
-					MaterialEditor.CopyPartsInfo(ev);
-					AccStateSync.CopyPartsInfo(ev);
-					MaterialRouter.CopyPartsInfo(ev);
-
-					TaskUnlock();
+					foreach (string _name in SupportList)
+						Traverse.Create(this).Field(_name).Method("CopyPartsInfo", new object[] { ev }).GetValue();
 
 					ChaControl.StartCoroutine(RefreshCoroutine());
 				}
@@ -66,7 +65,7 @@ namespace CharacterAccessory
 
 			internal IEnumerator CopyPluginSettingCoroutine(AccessoryCopyEventArgs ev)
 			{
-				Logger.LogWarning($"[CopyPluginSettingCoroutine][{ChaControl.GetFullname()}] fired");
+				DebugMsg(LogLevel.Warning, $"[CopyPluginSettingCoroutine][{ChaControl.GetFullname()}] fired");
 
 				yield return new WaitForEndOfFrame();
 				yield return new WaitForEndOfFrame();
@@ -76,14 +75,10 @@ namespace CharacterAccessory
 
 			internal void CopyPluginSetting(AccessoryCopyEventArgs ev)
 			{
-				Logger.LogWarning($"[CopyPluginSetting][{ChaControl.GetFullname()}] fired");
+				DebugMsg(LogLevel.Warning, $"[CopyPluginSetting][{ChaControl.GetFullname()}] fired");
 
-				HairAccessoryCustomizer.CopyPartsInfo(ev);
-				MaterialEditor.CopyPartsInfo(ev);
-				AccStateSync.CopyPartsInfo(ev);
-				MaterialRouter.CopyPartsInfo(ev);
-
-				TaskUnlock();
+				foreach (string _name in SupportList)
+					Traverse.Create(this).Field(_name).Method("CopyPartsInfo", new object[] { ev }).GetValue();
 
 				ChaControl.StartCoroutine(RefreshCoroutine());
 			}

@@ -25,31 +25,29 @@ namespace CharacterAccessory
 	{
 		public const string GUID = "madevil.kk.ca";
 		public const string PluginName = "Character Accessory";
-		public const string Version = "1.0.0.0";
+		public const string Version = "1.0.1.0";
 
 		internal static new ManualLogSource Logger;
 		internal static CharacterAccessory Instance;
+		internal static Dictionary<string, Harmony> HooksInstance = new Dictionary<string, Harmony>();
 
 		internal static ConfigEntry<bool> CfgMakerMasterSwitch { get; set; }
 		internal static ConfigEntry<bool> CfgDebugMode { get; set; }
-#if DEBUG
-		//internal static ConfigEntry<bool> CfgMEHookLoadData { get; set; }
-#endif
+		internal static ConfigEntry<bool> CfgStudioFastReload { get; set; }
 		internal static ConfigEntry<bool> CfgMAHookUpdateStudioUI { get; set; }
-		internal static Dictionary<string, Harmony> HooksInstance = new Dictionary<string, Harmony>();
+
 		internal const int RefMax = 7;
+		internal static List<string> SupportList = new List<string>();
 
 		private void Awake()
 		{
 			Logger = base.Logger;
 			Instance = this;
 
-			CfgMakerMasterSwitch = Config.Bind("Maker", "Master Switch", true);
-			CfgDebugMode = Config.Bind("Debug", "Debug Mode", false);
-#if DEBUG
-			//CfgMEHookLoadData = Config.Bind("Hook", "ME LoadData", true);
-#endif
-			CfgMAHookUpdateStudioUI = Config.Bind("Hook", "MoreAccessories UpdateStudioUI", true); // studio only
+			CfgMakerMasterSwitch = Config.Bind("Maker", "Master Switch", true, new ConfigDescription("A quick switch on the sidebar that templary disable the function", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
+			CfgStudioFastReload = Config.Bind("Studio", "Fast Reload", false, new ConfigDescription("Disabled by default because some plugins are having visual problem", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
+			CfgDebugMode = Config.Bind("Debug", "Debug Mode", false, new ConfigDescription("Showing debug messages in LogWarning level", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
+			CfgMAHookUpdateStudioUI = Config.Bind("Hook", "MoreAccessories UpdateStudioUI", true, new ConfigDescription("Performance tweak, disable it if having issue on studio chara state panel update", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
 
 			if (Application.dataPath.EndsWith("CharaStudio_Data"))
 				CharaStudio.Running = true;
@@ -65,33 +63,31 @@ namespace CharacterAccessory
 			MaterialEditorSupport.Init();
 			MaterialRouterSupport.Init();
 			AccStateSyncSupport.Init();
+			DynamicBoneEditorSupport.Init();
 
 			if (CharaStudio.Running)
 			{
 				HooksInstance["Studio"] = Harmony.CreateAndPatchAll(typeof(HooksStudio));
-
-				SceneManager.sceneLoaded += (Scene scene, LoadSceneMode loadSceneMode) =>
-				{
-					if (!CharaStudio.Loaded && scene.name == "Studio")
-					{
-						CharaStudio.Loaded = true;
-						CharaStudio.RegisterStudioControls();
-					}
-				};
+				SceneManager.sceneLoaded += CharaStudio.StartupCheck;
 			}
 			else
 			{
 				MakerAPI.MakerBaseLoaded += (object sender, RegisterCustomControlsEvent ev) =>
 				{
-					//HooksInstance["Maker"] = Harmony.CreateAndPatchAll(typeof(HooksMaker));
+					HooksInstance["Maker"] = Harmony.CreateAndPatchAll(typeof(HooksMaker));
+
+					{
+						BepInEx.Bootstrap.Chainloader.PluginInfos.TryGetValue("ClothingStateMenu", out PluginInfo _pluginInfo);
+						if (_pluginInfo?.Instance != null)
+							HooksInstance["Maker"].Patch(_pluginInfo.Instance.GetType().GetMethod("OnGUI", AccessTools.all), prefix: new HarmonyMethod(typeof(HooksMaker), nameof(HooksMaker.DuringLoading_Prefix)));
+					}
 				};
 
 				MakerAPI.MakerExiting += (object sender, EventArgs ev) =>
 				{
-					/*
 					HooksInstance["Maker"].UnpatchAll(HooksInstance["Maker"].Id);
 					HooksInstance["Maker"] = null;
-					*/
+
 					SidebarToggleEnable = null;
 				};
 
@@ -99,10 +95,18 @@ namespace CharacterAccessory
 			}
 		}
 
+		internal sealed class ConfigurationManagerAttributes
+		{
+			//public int? Order;
+			public bool? IsAdvanced;
+		}
+
 		internal static void DebugMsg(LogLevel LogLevel, string LogMsg)
 		{
 			if (CfgDebugMode.Value)
 				Logger.Log(LogLevel, LogMsg);
+			else
+				Logger.Log(LogLevel.Debug, LogMsg);
 		}
 #if DEBUG
 		internal static string DisplayObjectInfo(object o)

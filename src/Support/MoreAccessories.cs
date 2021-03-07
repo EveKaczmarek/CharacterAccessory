@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 using MessagePack;
 
 using BepInEx;
+using BepInEx.Logging;
 using HarmonyLib;
 
 using KKAPI.Maker;
@@ -23,6 +25,7 @@ namespace CharacterAccessory
 			{
 				BepInEx.Bootstrap.Chainloader.PluginInfos.TryGetValue("com.joan6694.illusionplugins.moreaccessories", out PluginInfo _pluginInfo);
 				_instance = _pluginInfo.Instance;
+				Assembly _assembly = _instance.GetType().Assembly;
 				_legacy = _pluginInfo.Metadata.Version.CompareTo(new Version("1.1.0")) < 0;
 #if DEBUG
 				if (_legacy)
@@ -36,6 +39,14 @@ namespace CharacterAccessory
 					HooksInstance["General"].Patch(_instance.GetType().GetMethod("UpdateStudioUI", AccessTools.all, null, new Type[0], null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.MoreAccessories_UpdateStudioUI_Prefix)));
 			}
 
+			internal static void UpdateStudioUI(ChaControl _chaCtrl)
+			{
+				if (CharaStudio.CurOCIChar == null) return;
+				if (CharaStudio.CurOCIChar.charInfo != _chaCtrl) return;
+
+				AccessTools.Method(_instance.GetType(), "UpdateUI").Invoke(_instance, null);
+			}
+
 			internal static class Hooks
 			{
 				internal static bool ChaControl_UpdateVisible_Patches_Prefix(ChaControl __0)
@@ -46,7 +57,7 @@ namespace CharacterAccessory
 					if (_pluginCtrl.DuringLoading)
 					{
 #if DEBUG
-						Logger.LogWarning($"[ChaControl_UpdateVisible_Patches_Prefix][{__0.chaFile.parameter?.fullname.Trim()}] await loading");
+						DebugMsg(LogLevel.Warning, $"[ChaControl_UpdateVisible_Patches_Prefix][{__0.GetFullname()}] await loading");
 #endif
 						return false;
 					}
@@ -68,7 +79,7 @@ namespace CharacterAccessory
 					if (!flag)
 					{
 #if DEBUG
-						Logger.LogWarning($"[MoreAccessories_UpdateStudioUI_Prefix] await loading");
+						DebugMsg(LogLevel.Warning, $"[MoreAccessories_UpdateStudioUI_Prefix][{CharaStudio.CurOCIChar.charInfo.GetFullname()}] await loading");
 #endif
 						return false;
 					}

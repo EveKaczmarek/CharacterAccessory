@@ -3,6 +3,8 @@ using System.Linq;
 
 using UniRx;
 
+using BepInEx.Logging;
+
 namespace CharacterAccessory
 {
 	public partial class CharacterAccessory
@@ -41,7 +43,7 @@ namespace CharacterAccessory
 				else
 					RefLastNotEmpty = (PartsInfo.Count == 0) ? -1 : PartsInfo.Keys.Max();
 
-				Logger.LogWarning($"[PrepareQueue][ReferralIndex: {ReferralIndex}][SrcLastNotEmpty: Slot{RefLastNotEmpty + 1:00}]");
+				DebugMsg(LogLevel.Warning, $"[PrepareQueue][{ChaControl.GetFullname()}][ReferralIndex: {ReferralIndex}][SrcLastNotEmpty: Slot{RefLastNotEmpty + 1:00}]");
 
 				if (RefLastNotEmpty < 0)
 				{
@@ -68,7 +70,7 @@ namespace CharacterAccessory
 				List<int> UsedPartsRev = new List<int>();
 				UsedPartsRev.AddRange(UsedParts);
 				UsedPartsRev.Reverse();
-				Logger.LogWarning($"[PrepareQueue][CurrentCoordinateIndex: {CurrentCoordinateIndex}][CurFirstNotEmpty: Slot{CurFirstNotEmpty + 1:00}][CurLastNotEmpty: Slot{CurLastNotEmpty + 1:00}]");
+				DebugMsg(LogLevel.Warning, $"[PrepareQueue][{ChaControl.GetFullname()}][CurrentCoordinateIndex: {CurrentCoordinateIndex}][CurFirstNotEmpty: Slot{CurFirstNotEmpty + 1:00}][CurLastNotEmpty: Slot{CurLastNotEmpty + 1:00}]");
 
 				if (CurFirstNotEmpty <= RefLastNotEmpty)
 				{

@@ -1,5 +1,8 @@
-﻿using System.Collections;
+using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.IO;
 
 using ChaCustom;
 using UnityEngine;
@@ -7,6 +10,8 @@ using UniRx;
 using MessagePack;
 using Studio;
 
+using BepInEx.Logging;
+using HarmonyLib;
 using ExtensibleSaveFormat;
 using Sideloader.AutoResolver;
 
@@ -27,6 +32,7 @@ namespace CharacterAccessory
 			internal MaterialEditorSupport.UrineBag MaterialEditor;
 			internal MaterialRouterSupport.UrineBag MaterialRouter;
 			internal AccStateSyncSupport.UrineBag AccStateSync;
+			internal DynamicBoneEditorSupport.UrineBag DynamicBoneEditor;
 
 			internal Dictionary<int, ChaFileAccessory.PartsInfo> PartsInfo = new Dictionary<int, ChaFileAccessory.PartsInfo>();
 			internal Dictionary<int, ResolveInfo> PartsResolveInfo = new Dictionary<int, ResolveInfo>();
@@ -42,6 +48,7 @@ namespace CharacterAccessory
 				MaterialEditor = new MaterialEditorSupport.UrineBag(ChaControl);
 				MaterialRouter = new MaterialRouterSupport.UrineBag(ChaControl);
 				AccStateSync = new AccStateSyncSupport.UrineBag(ChaControl);
+				DynamicBoneEditor = new DynamicBoneEditorSupport.UrineBag(ChaControl);
 
 				CurrentCoordinate.Subscribe(value => { OnCoordinateChanged(); });
 				base.Start();
@@ -56,22 +63,21 @@ namespace CharacterAccessory
 			{
 				DuringLoading = false;
 
-				Dictionary<int, string> HairAccessoryCustomizerExtdata = HairAccessoryCustomizer.Save();
-				Dictionary<string, string> MaterialEditorExtdata = MaterialEditor.Save();
-				List<string> MaterialRouterExtdata = MaterialRouter.Save();
-				Dictionary<int, string> AccStateSyncExtdata = AccStateSync.Save();
-
 				PluginData ExtendedData = new PluginData();
+
 				ExtendedData.data.Add("MoreAccessoriesExtdata", MessagePackSerializer.Serialize(PartsInfo));
 				ExtendedData.data.Add("ResolutionInfoExtdata", MessagePackSerializer.Serialize(PartsResolveInfo));
-				ExtendedData.data.Add("HairAccessoryCustomizerExtdata", MessagePackSerializer.Serialize(HairAccessoryCustomizerExtdata));
-				ExtendedData.data.Add("MaterialEditorExtdata", MessagePackSerializer.Serialize(MaterialEditorExtdata));
-				ExtendedData.data.Add("MaterialRouterExtdata", MessagePackSerializer.Serialize(MaterialRouterExtdata));
-				ExtendedData.data.Add("AccStateSyncExtdata", MessagePackSerializer.Serialize(AccStateSyncExtdata));
+
+				foreach (string _name in SupportList)
+				{
+					var _extData = Traverse.Create(this).Field(_name).Method("Save").GetValue();
+					ExtendedData.data.Add($"{_name}Extdata", MessagePackSerializer.Serialize(_extData));
+				}
 
 				ExtendedData.data.Add("FunctionEnable", FunctionEnable);
 				ExtendedData.data.Add("ReferralIndex", ReferralIndex);
-				ExtendedData.data.Add("TextureContainer", MessagePackSerializer.Serialize(MaterialEditor._texData));
+				ExtendedData.data.Add("TextureContainer", MessagePackSerializer.Serialize(MaterialEditor.TexContainer));
+
 				SetExtendedData(ExtendedData);
 			}
 
@@ -81,16 +87,10 @@ namespace CharacterAccessory
 
 				PluginData ExtendedData = GetExtendedData();
 				PartsInfo.Clear();
-				Dictionary<int, string> HairAccessoryCustomizerExtdata = new Dictionary<int, string>();
-				Dictionary<string, string> MaterialEditorExtdata = new Dictionary<string, string>();
-				List<string> MaterialRouterExtdata = new List<string>();
-				Dictionary<int, string> AccStateSyncExtdata = new Dictionary<int, string>();
+				PartsResolveInfo.Clear();
 				FunctionEnable = false;
 				ReferralIndex = RefMax;
-
 				MaterialEditor.Reset();
-				byte[] _tempHolder = null;
-				MaterialEditor._texData.Clear();
 
 				if (ExtendedData != null)
 				{
@@ -98,21 +98,26 @@ namespace CharacterAccessory
 						PartsInfo = MessagePackSerializer.Deserialize<Dictionary<int, ChaFileAccessory.PartsInfo>>((byte[]) loadedMoreAccessoriesExtdata);
 					if (ExtendedData.data.TryGetValue("ResolutionInfoExtdata", out object loadedResolutionInfoExtdata) && loadedResolutionInfoExtdata != null)
 						PartsResolveInfo = MessagePackSerializer.Deserialize<Dictionary<int, ResolveInfo>>((byte[]) loadedResolutionInfoExtdata);
-					if (ExtendedData.data.TryGetValue("HairAccessoryCustomizerExtdata", out object loadedHairAccessoryCustomizerExtdata) && loadedHairAccessoryCustomizerExtdata != null)
-						HairAccessoryCustomizerExtdata = MessagePackSerializer.Deserialize<Dictionary<int, string>>((byte[]) loadedHairAccessoryCustomizerExtdata);
-					if (ExtendedData.data.TryGetValue("MaterialEditorExtdata", out object loadedMaterialEditorExtdata) && loadedMaterialEditorExtdata != null)
-						MaterialEditorExtdata = MessagePackSerializer.Deserialize<Dictionary<string, string>>((byte[]) loadedMaterialEditorExtdata);
-					if (ExtendedData.data.TryGetValue("MaterialRouterExtdata", out object loadedMaterialRouterExtdata) && loadedMaterialRouterExtdata != null)
-						MaterialRouterExtdata = MessagePackSerializer.Deserialize<List<string>>((byte[]) loadedMaterialRouterExtdata);
-					if (ExtendedData.data.TryGetValue("AccStateSyncExtdata", out object loadedAccStateSyncExtdata) && loadedAccStateSyncExtdata != null)
-						AccStateSyncExtdata = MessagePackSerializer.Deserialize<Dictionary<int, string>>((byte[]) loadedAccStateSyncExtdata);
+
+					foreach (string _name in SupportList)
+					{
+						if (ExtendedData.data.TryGetValue($"{_name}Extdata", out object loadedExtdata) && loadedExtdata != null)
+						{
+							if ((_name == "HairAccessoryCustomizer") || (_name == "AccStateSync"))
+								Traverse.Create(this).Field(_name).Method("Load", new object[] { MessagePackSerializer.Deserialize<Dictionary<int, string>>((byte[]) loadedExtdata) }).GetValue();
+							else if (_name == "MaterialEditor")
+								Traverse.Create(this).Field(_name).Method("Load", new object[] { MessagePackSerializer.Deserialize<Dictionary<string, string>>((byte[]) loadedExtdata) }).GetValue();
+							else if ((_name == "MaterialRouter") || (_name == "DynamicBoneEditor"))
+								Traverse.Create(this).Field(_name).Method("Load", new object[] { MessagePackSerializer.Deserialize<List<string>>((byte[]) loadedExtdata) }).GetValue();
+						}
+					}
 
 					if (ExtendedData.data.TryGetValue("FunctionEnable", out object loadedFunctionEnable) && loadedFunctionEnable != null)
 						FunctionEnable = (bool) loadedFunctionEnable;
 					if (ExtendedData.data.TryGetValue("ReferralIndex", out object loadedReferralIndex) && loadedReferralIndex != null)
 						SetReferralIndex((int) loadedReferralIndex);
 					if (ExtendedData.data.TryGetValue("TextureContainer", out object loadedTextureContainer) && loadedTextureContainer != null)
-						_tempHolder = (byte[]) loadedTextureContainer;
+						MaterialEditor.TexContainer = MessagePackSerializer.Deserialize<Dictionary<int, byte[]>>((byte[]) loadedTextureContainer);
 
 					foreach (KeyValuePair<int, ChaFileAccessory.PartsInfo> _part in PartsInfo)
 					{
@@ -132,7 +137,6 @@ namespace CharacterAccessory
 						else
 							PartsResolveInfo[_part.Key] = null;
 					}
-
 				}
 
 				if (MakerAPI.InsideAndLoaded)
@@ -141,23 +145,15 @@ namespace CharacterAccessory
 					MakerDropdownRef.Value = ReferralIndex;
 				}
 
-				HairAccessoryCustomizer.Load(HairAccessoryCustomizerExtdata);
-				MaterialEditor.Load(MaterialEditorExtdata);
-				MaterialRouter.Load(MaterialRouterExtdata);
-				AccStateSync.Load(AccStateSyncExtdata);
-
-				if (_tempHolder != null)
-					MaterialEditor._texData = MessagePackSerializer.Deserialize<Dictionary<int, byte[]>>(_tempHolder);
-
 				base.OnReload(currentGameMode);
 			}
 
-			protected override void OnCoordinateBeingLoaded(ChaFileCoordinate coordinate)
+			protected override void OnCoordinateBeingLoaded(ChaFileCoordinate _coordinate)
 			{
 				DuringLoading = false;
 				bool go = true;
 
-				Logger.LogWarning($"[OnCoordinateBeingLoaded][{ChaControl.GetFullname()}][FunctionEnable: {FunctionEnable}][ReferralIndex: {ReferralIndex}][PartsInfo.Count: {PartsInfo.Count}]");
+				DebugMsg(LogLevel.Warning, $"[OnCoordinateBeingLoaded][{ChaControl.GetFullname()}][FunctionEnable: {FunctionEnable}][ReferralIndex: {ReferralIndex}][PartsInfo.Count: {PartsInfo.Count}]");
 
 				if (!FunctionEnable)
 					go = false;
@@ -171,12 +167,12 @@ namespace CharacterAccessory
 					TaskLock();
 					ChaControl.StartCoroutine(OnCoordinateBeingLoadedCoroutine());
 				}
-				base.OnCoordinateBeingLoaded(coordinate);
+				base.OnCoordinateBeingLoaded(_coordinate);
 			}
 
 			internal IEnumerator OnCoordinateBeingLoadedCoroutine()
 			{
-				Logger.LogWarning($"[OnCoordinateBeingLoadedCoroutine][{ChaControl.GetFullname()}] fired");
+				DebugMsg(LogLevel.Warning, $"[OnCoordinateBeingLoadedCoroutine][{ChaControl.GetFullname()}] fired");
 
 				yield return new WaitForEndOfFrame();
 				yield return new WaitForEndOfFrame();
@@ -187,40 +183,89 @@ namespace CharacterAccessory
 
 			internal IEnumerator RefreshCoroutine()
 			{
-				Logger.LogWarning($"[RefreshCoroutine][{ChaControl.GetFullname()}] fired");
+				DebugMsg(LogLevel.Warning, $"[RefreshCoroutine][{ChaControl.GetFullname()}] fired");
 
 				yield return new WaitForEndOfFrame();
 				yield return new WaitForEndOfFrame();
 
-				ChaControl.ChangeCoordinateTypeAndReload(false);
+				TaskUnlock();
 
-				if (MakerAPI.InsideAndLoaded)
-					CustomBase.Instance.updateCustomUI = true;
-				else if (CharaStudio.Loaded)
-					CharaStudio.RefreshCharaStatePanel();
+				if (CharaStudio.Running)
+				{
+					if (CfgStudioFastReload.Value)
+						FastReload(false);
+					else
+						BigReload();
+				}
+				else
+				{
+					ChaControl.ChangeCoordinateTypeAndReload(false);
 
+					if (MakerAPI.InsideAndLoaded)
+						CustomBase.Instance.updateCustomUI = true;
+				}
 				ChaControl.StartCoroutine(PreviewCoroutine());
 			}
 
 			internal IEnumerator PreviewCoroutine()
 			{
-				Logger.LogWarning($"[PreviewCoroutine][{ChaControl.GetFullname()}] fired");
+				DebugMsg(LogLevel.Warning, $"[PreviewCoroutine][{ChaControl.GetFullname()}] fired");
 
 				yield return new WaitForEndOfFrame();
 				yield return new WaitForEndOfFrame();
-				/*
-				AccStateSync.SetAccessoryStateAll();
-				AccStateSync.SyncAllAccToggle();
-				*/
+
 				AccStateSync.InitCurOutfitTriggerInfo("OnCoordinateBeingLoaded");
+
+				if (CharaStudio.Loaded)
+					ChaControl.StartCoroutine(RefreshCharaStatePanelCoroutine());
+			}
+
+			internal IEnumerator RefreshCharaStatePanelCoroutine()
+			{
+				DebugMsg(LogLevel.Warning, $"[RefreshCharaStatePanelCoroutine][{ChaControl.GetFullname()}] fired");
+
+				yield return new WaitForEndOfFrame();
+				yield return new WaitForEndOfFrame();
+
+				//AccStateSync.SyncAllAccToggle();
+				CharaStudio.RefreshCharaStatePanel();
+				MoreAccessoriesSupport.UpdateStudioUI(ChaControl);
 			}
 
 			internal void SetReferralIndex(int _index)
 			{
-				Logger.LogWarning($"[SetReferralIndex][{ChaControl.GetFullname()}][_index: {_index}]");
+				DebugMsg(LogLevel.Warning, $"[SetReferralIndex][{ChaControl.GetFullname()}][_index: {_index}]");
 
 				if (ReferralIndex != _index)
 					ReferralIndex = MathfEx.RangeEqualOn(0, _index, RefMax) ? _index : RefMax;
+			}
+
+			internal void FastReload(bool _noLoadStatus = true)
+			{
+				byte[] _buffer = null;
+				using (MemoryStream _memoryStream = new MemoryStream())
+				{
+					using (BinaryWriter _writer = new BinaryWriter(_memoryStream))
+					{
+						ChaControl.chaFile.SaveCharaFile(_writer, false);
+						_buffer = _memoryStream.ToArray();
+					}
+				}
+				using (MemoryStream _input = new MemoryStream(_buffer))
+				{
+					using (BinaryReader _reader = new BinaryReader(_input))
+					{
+						ChaControl.chaFile.LoadCharaFile(_reader, true, _noLoadStatus);
+					}
+				}
+			}
+
+			internal void BigReload()
+			{
+				string CardPath = Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(BepInEx.Paths.ExecutablePath) + "_CA.png");
+				using (FileStream fileStream = new FileStream(CardPath, FileMode.Create, FileAccess.Write))
+					ChaControl.chaFile.SaveCharaFile(fileStream, true);
+				Studio.Studio.Instance.dicInfo.Values.OfType<OCIChar>().FirstOrDefault(x => x.charInfo == ChaControl).ChangeChara(CardPath);
 			}
 		}
 	}

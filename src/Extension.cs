@@ -48,6 +48,8 @@ namespace CharacterAccessory
 
 		public static object JsonClone(this object self)
 		{
+			if (self == null)
+				return null;
 			string json = JSONSerializer.Serialize(self.GetType(), self);
 			return JSONSerializer.Deserialize(self.GetType(), json);
 		}

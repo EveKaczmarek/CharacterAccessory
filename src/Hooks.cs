@@ -1,5 +1,6 @@
 ﻿using Studio;
 
+using BepInEx.Logging;
 using HarmonyLib;
 
 using KKAPI.Chara;
@@ -17,7 +18,26 @@ namespace CharacterAccessory
 				if (_pluginCtrl.DuringLoading)
 				{
 #if DEBUG
-					Logger.LogWarning($"[DuringLoading_Prefix][{_chaCtrl.GetFullname()}] await loading");
+					DebugMsg(LogLevel.Warning, $"[DuringLoading_Prefix][{_chaCtrl.GetFullname()}] await loading");
+#endif
+					return false;
+				}
+				return true;
+			}
+		}
+
+		internal class HooksMaker
+		{
+			internal static bool DuringLoading_Prefix()
+			{
+				ChaControl _chaCtrl = ChaCustom.CustomBase.Instance.chaCtrl;
+				CharacterAccessoryController _pluginCtrl = GetController(_chaCtrl);
+				if (_pluginCtrl == null) return true;
+
+				if (_pluginCtrl.DuringLoading)
+				{
+#if DEBUG
+					DebugMsg(LogLevel.Warning, $"[DuringLoading_Prefix][{_chaCtrl.GetFullname()}] await loading");
 #endif
 					return false;
 				}

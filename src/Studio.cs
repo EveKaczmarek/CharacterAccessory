@@ -1,17 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.IO;
 
-using UnityEngine;
-using UnityEngine.UI;
-using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 using Studio;
 using UniRx;
 
-using BepInEx;
-using BepInEx.Logging;
 using HarmonyLib;
 
 using KKAPI.Studio;
@@ -79,7 +73,10 @@ namespace CharacterAccessory
 				DebugMsg(LogLevel.Warning, $"[StartupCheck][{_scene.name}][{_loadSceneMode}]");
 #endif
 				if (!Loaded && _scene.name == "Studio")
+				{
 					RegisterStudioControls();
+					SceneManager.sceneLoaded -= StartupCheck;
+				}
 			}
 
 			internal static void RegisterStudioControls()
@@ -88,9 +85,7 @@ namespace CharacterAccessory
 
 				Loaded = true;
 
-				List<string> coordinateList = Enum.GetNames(typeof(ChaFileDefine.CoordinateType)).ToList();
-				coordinateList.Add("CharaAcc");
-				CurrentStateCategorySwitch StudioToggleEnable = new CurrentStateCategorySwitch("Enable", OCIChar => (bool) OCIChar?.charInfo?.GetComponent<CharacterAccessoryController>().FunctionEnable);
+				CurrentStateCategorySwitch StudioToggleEnable = new CurrentStateCategorySwitch("Enable", OCIChar => (bool) GetController(OCIChar)?.FunctionEnable);
 				StudioToggleEnable.Value.Subscribe(_value =>
 				{
 					CharacterAccessoryController _pluginCtrl = StudioAPI.GetSelectedControllers<CharacterAccessoryController>().FirstOrDefault();
@@ -99,7 +94,18 @@ namespace CharacterAccessory
 				});
 				StudioAPI.GetOrCreateCurrentStateCategory("CharaAcc").AddControl(StudioToggleEnable);
 
-				CurrentStateCategoryDropdown StudioDropdownRef = new CurrentStateCategoryDropdown("Referral", coordinateList.ToArray(), OCIChar => (int) OCIChar?.charInfo?.GetComponent<CharacterAccessoryController>().ReferralIndex);
+				CurrentStateCategorySwitch StudioToggleAutoCopyToBlank = new CurrentStateCategorySwitch("Auto Copy To Blank", OCIChar => (bool) GetController(OCIChar)?.AutoCopyToBlank);
+				StudioToggleAutoCopyToBlank.Value.Subscribe(_value =>
+				{
+					CharacterAccessoryController _pluginCtrl = StudioAPI.GetSelectedControllers<CharacterAccessoryController>().FirstOrDefault();
+					if (_pluginCtrl == null) return;
+					_pluginCtrl.AutoCopyToBlank = _value;
+				});
+				StudioAPI.GetOrCreateCurrentStateCategory("CharaAcc").AddControl(StudioToggleAutoCopyToBlank);
+
+				List<string> coordinateList = Enum.GetNames(typeof(ChaFileDefine.CoordinateType)).ToList();
+				coordinateList.Add("CharaAcc");
+				CurrentStateCategoryDropdown StudioDropdownRef = new CurrentStateCategoryDropdown("Referral", coordinateList.ToArray(), OCIChar => (int) GetController(OCIChar)?.ReferralIndex);
 				StudioDropdownRef.Value.Subscribe(_value =>
 				{
 					CharacterAccessoryController _pluginCtrl = StudioAPI.GetSelectedControllers<CharacterAccessoryController>().FirstOrDefault();
@@ -107,69 +113,6 @@ namespace CharacterAccessory
 					_pluginCtrl.SetReferralIndex(_value);
 				});
 				StudioAPI.GetOrCreateCurrentStateCategory("CharaAcc").AddControl(StudioDropdownRef);
-
-				SceneManager.sceneLoaded -= StartupCheck;
-#if DEBUG
-				ScrollRect charalist = SetupList("StudioScene/Canvas Main Menu/02_Manipulate/00_Chara/00_Root");
-				CreateCharaButton("tglReload", "Reload", charalist, () =>
-				{
-					OCIChar CurOCIChar = CharaStudio.CurOCIChar;
-					if ((CurOCIChar == null) || (CurOCIChar.charInfo == null))
-						return;
-
-					CharacterAccessoryController _pluginCtrl = GetController(CurOCIChar);
-					if (_pluginCtrl == null) return;
-					_pluginCtrl.BigReload();
-				});
-
-				CreateCharaButton("tglQuickReload", "Quick Reload", charalist, () =>
-				{
-					OCIChar CurOCIChar = CharaStudio.CurOCIChar;
-					if ((CurOCIChar == null) || (CurOCIChar.charInfo == null))
-						return;
-
-					CharacterAccessoryController _pluginCtrl = GetController(CurOCIChar);
-					if (_pluginCtrl == null) return;
-					_pluginCtrl.FastReload();
-				});
-#endif
-			}
-
-			internal static ScrollRect SetupList(string goPath)
-			{
-				GameObject listObject = GameObject.Find(goPath);
-				ScrollRect scrollRect = listObject.GetComponent<ScrollRect>();
-				scrollRect.content.gameObject.GetOrAddComponent<VerticalLayoutGroup>();
-				scrollRect.content.gameObject.GetOrAddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-				scrollRect.scrollSensitivity = 25;
-
-				foreach (Transform item in scrollRect.content.transform)
-				{
-					LayoutElement layoutElement = item.gameObject.GetOrAddComponent<LayoutElement>();
-					layoutElement.preferredHeight = 40;
-				}
-
-				return scrollRect;
-			}
-
-			internal static Button CreateCharaButton(string name, string label, ScrollRect scrollRect, UnityAction onClickEvent)
-			{
-				return CreateButton(name, label, scrollRect, onClickEvent, "StudioScene/Canvas Main Menu/02_Manipulate/00_Chara/00_Root/Viewport/Content/State");
-			}
-
-			internal static Button CreateButton(string name, string label, ScrollRect scrollRect, UnityAction onClickEvent, string goPath)
-			{
-				GameObject template = GameObject.Find(goPath);
-				GameObject newObject = Instantiate(template, scrollRect.content.transform);
-				newObject.name = name;
-				Text textComponent = newObject.GetComponentInChildren<Text>();
-				textComponent.text = label;
-				Button buttonComponent = newObject.GetComponent<Button>();
-				for (int i = 0; i < buttonComponent.onClick.GetPersistentEventCount(); i++)
-					buttonComponent.onClick.SetPersistentListenerState(i, UnityEventCallState.Off);
-				buttonComponent.onClick.RemoveAllListeners();
-				buttonComponent.onClick.AddListener(onClickEvent);
-				return buttonComponent;
 			}
 		}
 	}

@@ -1,9 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 
+using UnityEngine;
 using UniRx;
 
 using BepInEx.Logging;
+
+using KKAPI.Maker;
 
 namespace CharacterAccessory
 {
@@ -23,12 +27,55 @@ namespace CharacterAccessory
 				DuringLoading = false;
 			}
 
+			internal void AutoCopyCheck()
+			{
+				bool go = true;
+
+				DebugMsg(LogLevel.Warning, $"[OnCoordinateChanged][{ChaControl.GetFullname()}][CurrentCoordinateIndex: {CurrentCoordinateIndex}]");
+
+				if (!AutoCopyToBlank)
+					go = false;
+				if (!FunctionEnable)
+					go = false;
+				if (ReferralIndex == 7 && PartsInfo.Count == 0)
+					go = false;
+				if (ReferralIndex < 7 && ReferralIndex == CurrentCoordinateIndex)
+					go = false;
+				if (MakerAPI.InsideAndLoaded && !CfgMakerMasterSwitch.Value)
+					go = false;
+
+				IEnumerator OnCoordinateChangedCoroutine()
+				{
+					DebugMsg(LogLevel.Warning, $"[OnCoordinateChangedCoroutine][{ChaControl.GetFullname()}] fired");
+
+					yield return new WaitForEndOfFrame();
+					yield return new WaitForEndOfFrame();
+
+					if (MoreAccessoriesSupport.ListUsedPartsInfo(ChaControl, CurrentCoordinateIndex).Count > 0)
+						yield break;
+
+					TaskLock();
+					if (ReferralIndex < 7)
+						CopyPartsInfo();
+					else
+						RestorePartsInfo();
+				}
+
+				if (go)
+					ChaControl.StartCoroutine(OnCoordinateChangedCoroutine());
+			}
+
 			internal void PrepareQueue()
 			{
 				QueueList = new List<QueueItem>();
 
 				if (ReferralIndex < 0)
 				{
+					TaskUnlock();
+					return;
+				}
+				if (ReferralIndex < 7 && ReferralIndex == CurrentCoordinateIndex)
+                {
 					TaskUnlock();
 					return;
 				}

@@ -15,6 +15,7 @@ namespace CharacterAccessory
 	{
 		internal static MakerDropdown MakerDropdownRef;
 		internal static MakerToggle MakerToggleEnable;
+		internal static MakerToggle MakerToggleAutoCopyToBlank;
 		internal static SidebarToggle SidebarToggleEnable;
 
 		private void RegisterCustomSubCategories(object sender, RegisterSubCategoriesEvent args)
@@ -45,6 +46,12 @@ namespace CharacterAccessory
 				_pluginCtrl.FunctionEnable = value;
 			});
 
+			MakerToggleAutoCopyToBlank = args.AddControl(new MakerToggle(category, "Auto Copy To Blank", false, this));
+			MakerToggleAutoCopyToBlank.ValueChanged.Subscribe(value =>
+			{
+				_pluginCtrl.AutoCopyToBlank = value;
+			});
+
 			args.AddControl(new MakerButton("Backup", category, this)).OnClick.AddListener(delegate
 			{
 				if (_pluginCtrl.DuringLoading) return;
@@ -69,6 +76,7 @@ namespace CharacterAccessory
 				_pluginCtrl.Reset();
 				MakerDropdownRef.Value = _pluginCtrl.ReferralIndex;
 				MakerToggleEnable.Value = _pluginCtrl.FunctionEnable;
+				MakerToggleAutoCopyToBlank.Value = _pluginCtrl.AutoCopyToBlank;
 			});
 #if DEBUG
 			args.AddControl(new MakerButton("Transfer", category, this)).OnClick.AddListener(delegate

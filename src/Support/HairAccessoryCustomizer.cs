@@ -61,6 +61,14 @@ namespace CharacterAccessory
 					_pluginCtrl = GetController(_chaCtrl);
 				}
 
+				internal object GetExtDataLink(int _coordinateIndex)
+				{
+					object HairAccessories = Traverse.Create(_pluginCtrl).Field("HairAccessories").GetValue();
+					if (HairAccessories == null)
+						return null;
+					return HairAccessories.RefTryGetValue(_coordinateIndex);
+				}
+
 				internal void Reset()
 				{
 					_charaAccData.Clear();
@@ -105,21 +113,18 @@ namespace CharacterAccessory
 					_charaAccData.Clear();
 
 					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
-					
-					List<int> _keys = Traverse.Create(_pluginCtrl).Field("HairAccessories").Property("Keys").GetValue<ICollection<int>>().ToList();
-					if (_keys.IndexOf(_coordinateIndex) < 0) return;
-					object _hairAccessoryInfos = Traverse.Create(_pluginCtrl).Field("HairAccessories").Method("get_Item", new object[] { _coordinateIndex }).GetValue();
-					//DebugMsg(LogLevel.Warning, $"[HairAccessoryCustomizer][Backup][HairAccessories.Count: {Traverse.Create(HairAccessories).Property("Count").GetValue<int>()}]");
-					//DebugMsg(LogLevel.Warning, $"[HairAccessoryCustomizer][Backup][_hairAccessoryInfos.Count: {Traverse.Create(_hairAccessoryInfos).Property("Count").GetValue<int>()}]");
-					if (_hairAccessoryInfos == null) return;
+					object _extdataLink = GetExtDataLink(_coordinateIndex);
+					if (_extdataLink == null) return;
 
-					List<int> _slots = Traverse.Create(_hairAccessoryInfos).Property("Keys").GetValue<ICollection<int>>().ToList();
-					//DebugMsg(LogLevel.Warning, $"[HairAccessoryCustomizer][Backup][keys: {string.Join(",", _slots.Select(x => x.ToString()).ToArray())}]");
+					List<int> _slots = Traverse.Create(_extdataLink).Property("Keys").GetValue<ICollection<int>>().ToList();
+#if DEBUG
+					DebugMsg(LogLevel.Warning, $"[HairAccessoryCustomizer][Backup][keys: {string.Join(",", _slots.Select(x => x.ToString()).ToArray())}]");
+#endif
 					foreach (int _slotIndex in _slots)
 					{
 						if (!MoreAccessoriesSupport.IsHairAccessory(_chaCtrl, _slotIndex)) continue;
 
-						object HairAccessoryInfo = _hairAccessoryInfos.RefTryGetValue(_slotIndex);
+						object HairAccessoryInfo = _extdataLink.RefTryGetValue(_slotIndex);
 						if (HairAccessoryInfo == null) continue;
 
 						_charaAccData[_slotIndex] = HairAccessoryInfo.JsonClone();
@@ -131,24 +136,20 @@ namespace CharacterAccessory
 					if (!_installed) return;
 
 					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
-
-					List<int> _keys = Traverse.Create(_pluginCtrl).Field("HairAccessories").Property("Keys").GetValue<ICollection<int>>().ToList();
-					if (_keys.IndexOf(_coordinateIndex) < 0) return;
-
-					object _hairAccessoryInfos = Traverse.Create(_pluginCtrl).Field("HairAccessories").Method("get_Item", new object[] { _coordinateIndex }).GetValue();
-					if (_hairAccessoryInfos == null) return;
+					object _extdataLink = GetExtDataLink(_coordinateIndex);
+					if (_extdataLink == null) return;
 
 					foreach (KeyValuePair<int, object> x in _charaAccData)
 					{
-						if (_hairAccessoryInfos.RefTryGetValue(x.Key) != null)
+						if (_extdataLink.RefTryGetValue(x.Key) != null)
 						{
 							DebugMsg(LogLevel.Warning, $"[HairAccessoryCustomizer][Restore][{_chaCtrl.GetFullname()}][{x.Key}] remove HairAccessoryInfo");
-							Traverse.Create(_hairAccessoryInfos).Method("Remove", new object[] { x.Key }).GetValue();
+							Traverse.Create(_extdataLink).Method("Remove", new object[] { x.Key }).GetValue();
 						}
 #if DEBUG
 						DebugMsg(LogLevel.Warning, $"[HairAccessoryCustomizer][Restore][{_chaCtrl.GetFullname()}][{x.Key}]\n{DisplayObjectInfo(x.Value)}");
 #endif
-						Traverse.Create(_hairAccessoryInfos).Method("Add", new object[] { x.Key, x.Value.JsonClone() }).GetValue();
+						Traverse.Create(_extdataLink).Method("Add", new object[] { x.Key, x.Value.JsonClone() }).GetValue();
 					}
 				}
 

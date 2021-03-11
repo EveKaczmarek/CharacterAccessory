@@ -85,6 +85,7 @@ namespace CharacterAccessory
 			internal void Reset()
 			{
 				FunctionEnable = false;
+				AutoCopyToBlank = false;
 				ReferralIndex = RefMax;
 				PartsInfo.Clear();
 				PartsResolveInfo.Clear();

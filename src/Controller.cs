@@ -39,6 +39,7 @@ namespace CharacterAccessory
 
 			internal int ReferralIndex = -1;
 			internal bool FunctionEnable = false;
+			internal bool AutoCopyToBlank = false;
 			internal bool DuringLoading = false;
 			internal int CurrentCoordinateIndex => ChaControl.fileStatus.coordinateType;
 
@@ -56,12 +57,13 @@ namespace CharacterAccessory
 
 			private void OnCoordinateChanged()
 			{
-				DuringLoading = false;
+				TaskUnlock();
+				AutoCopyCheck();
 			}
 
 			protected override void OnCardBeingSaved(GameMode currentGameMode)
 			{
-				DuringLoading = false;
+				TaskUnlock();
 
 				PluginData ExtendedData = new PluginData();
 
@@ -75,6 +77,7 @@ namespace CharacterAccessory
 				}
 
 				ExtendedData.data.Add("FunctionEnable", FunctionEnable);
+				ExtendedData.data.Add("AutoCopyToBlank", AutoCopyToBlank);
 				ExtendedData.data.Add("ReferralIndex", ReferralIndex);
 				ExtendedData.data.Add("TextureContainer", MessagePackSerializer.Serialize(MaterialEditor.TexContainer));
 
@@ -83,12 +86,13 @@ namespace CharacterAccessory
 
 			protected override void OnReload(GameMode currentGameMode)
 			{
-				DuringLoading = false;
+				TaskUnlock();
 
 				PluginData ExtendedData = GetExtendedData();
 				PartsInfo.Clear();
 				PartsResolveInfo.Clear();
 				FunctionEnable = false;
+				AutoCopyToBlank = false;
 				ReferralIndex = RefMax;
 				MaterialEditor.Reset();
 
@@ -114,6 +118,9 @@ namespace CharacterAccessory
 
 					if (ExtendedData.data.TryGetValue("FunctionEnable", out object loadedFunctionEnable) && loadedFunctionEnable != null)
 						FunctionEnable = (bool) loadedFunctionEnable;
+					if (ExtendedData.data.TryGetValue("AutoCopyToBlank", out object loadedAutoCopyToBlank) && loadedAutoCopyToBlank != null)
+						AutoCopyToBlank = (bool) loadedAutoCopyToBlank;
+					
 					if (ExtendedData.data.TryGetValue("ReferralIndex", out object loadedReferralIndex) && loadedReferralIndex != null)
 						SetReferralIndex((int) loadedReferralIndex);
 					if (ExtendedData.data.TryGetValue("TextureContainer", out object loadedTextureContainer) && loadedTextureContainer != null)
@@ -142,15 +149,28 @@ namespace CharacterAccessory
 				if (MakerAPI.InsideAndLoaded)
 				{
 					MakerToggleEnable.Value = FunctionEnable;
+					MakerToggleAutoCopyToBlank.Value = AutoCopyToBlank;
 					MakerDropdownRef.Value = ReferralIndex;
 				}
+
+				IEnumerator OnReloadCoroutine()
+				{
+					DebugMsg(LogLevel.Warning, $"[OnReloadCoroutine][{ChaControl.GetFullname()}] fired");
+
+					yield return new WaitForEndOfFrame();
+					yield return new WaitForEndOfFrame();
+
+					AutoCopyCheck();
+				}
+
+				ChaControl.StartCoroutine(OnReloadCoroutine());
 
 				base.OnReload(currentGameMode);
 			}
 
 			protected override void OnCoordinateBeingLoaded(ChaFileCoordinate _coordinate)
 			{
-				DuringLoading = false;
+				TaskUnlock();
 				bool go = true;
 
 				DebugMsg(LogLevel.Warning, $"[OnCoordinateBeingLoaded][{ChaControl.GetFullname()}][FunctionEnable: {FunctionEnable}][ReferralIndex: {ReferralIndex}][PartsInfo.Count: {PartsInfo.Count}]");

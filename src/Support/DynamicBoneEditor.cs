@@ -58,6 +58,11 @@ namespace CharacterAccessory
 					_pluginCtrl = GetController(_chaCtrl);
 				}
 
+				internal object GetExtDataLink()
+				{
+					return Traverse.Create(_pluginCtrl).Field("AccessoryDynamicBoneData").GetValue();
+				}
+
 				internal void Reset()
 				{
 					if (!_installed) return;
@@ -94,17 +99,17 @@ namespace CharacterAccessory
 					if (!_installed) return;
 					_charaAccData.Clear();
 
+					object _extdataLink = GetExtDataLink();
+					if (_extdataLink == null) return;
+
 					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
 					CharacterAccessoryController _controller = CharacterAccessory.GetController(_chaCtrl);
-					List<int> _slots = _controller.PartsInfo.Keys.ToList();
+					List<int> _slots = _controller.PartsInfo?.Keys?.ToList();
 
-					object AccessoryDynamicBoneData = Traverse.Create(_pluginCtrl).Field("AccessoryDynamicBoneData").GetValue();
-					if (AccessoryDynamicBoneData == null) return;
-
-					int n = (AccessoryDynamicBoneData as IList).Count;
+					int n = (_extdataLink as IList).Count;
 					for (int i = 0; i < n; i++)
 					{
-						object x = AccessoryDynamicBoneData.RefElementAt(i).JsonClone(); // should I null cheack this?
+						object x = _extdataLink.RefElementAt(i).JsonClone(); // should I null cheack this?
 
 						if (Traverse.Create(x).Field("CoordinateIndex").GetValue<int>() != _coordinateIndex) continue;
 						if (_slots.IndexOf(Traverse.Create(x).Field("Slot").GetValue<int>()) < 0) continue;
@@ -122,15 +127,15 @@ namespace CharacterAccessory
 				{
 					if (!_installed) return;
 
-					object AccessoryDynamicBoneData = Traverse.Create(_pluginCtrl).Field("AccessoryDynamicBoneData").GetValue();
-					if (AccessoryDynamicBoneData == null) return;
+					object _extdataLink = GetExtDataLink();
+					if (_extdataLink == null) return;
 
 					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
 					for (int i = 0; i < _charaAccData.Count; i++)
 					{
 						object x = _charaAccData[i].JsonClone();
 						Traverse.Create(x).Field("CoordinateIndex").SetValue(_coordinateIndex);
-						Traverse.Create(AccessoryDynamicBoneData).Method("Add", new object[] { x }).GetValue();
+						Traverse.Create(_extdataLink).Method("Add", new object[] { x }).GetValue();
 					}
 				}
 
@@ -144,23 +149,23 @@ namespace CharacterAccessory
 				{
 					if (!_installed) return;
 
-					object AccessoryDynamicBoneData = Traverse.Create(_pluginCtrl).Field("AccessoryDynamicBoneData").GetValue();
-					if (AccessoryDynamicBoneData == null) return;
+					object _extdataLink = GetExtDataLink();
+					if (_extdataLink == null) return;
 
 					RemovePartsInfo(ev.DestinationSlotIndex);
 
 					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
 
-					int n = (AccessoryDynamicBoneData as IList).Count;
+					int n = (_extdataLink as IList).Count;
 					for (int i = 0; i < n; i++)
 					{
-						object x = AccessoryDynamicBoneData.RefElementAt(i).JsonClone();
+						object x = _extdataLink.RefElementAt(i).JsonClone();
 
 						if (Traverse.Create(x).Field("CoordinateIndex").GetValue<int>() != _coordinateIndex) continue;
 						if (Traverse.Create(x).Field("Slot").GetValue<int>() != ev.SourceSlotIndex) continue;
 
 						Traverse.Create(x).Field("Slot").SetValue(ev.DestinationSlotIndex);
-						Traverse.Create(AccessoryDynamicBoneData).Method("Add", new object[] { x }).GetValue();
+						Traverse.Create(_extdataLink).Method("Add", new object[] { x }).GetValue();
 					}
 				}
 

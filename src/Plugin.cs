@@ -25,7 +25,7 @@ namespace CharacterAccessory
 	{
 		public const string GUID = "madevil.kk.ca";
 		public const string PluginName = "Character Accessory";
-		public const string Version = "1.0.2.0";
+		public const string Version = "1.0.3.0";
 
 		internal static new ManualLogSource Logger;
 		internal static CharacterAccessory Instance;

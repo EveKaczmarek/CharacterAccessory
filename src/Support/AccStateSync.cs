@@ -50,6 +50,7 @@ namespace CharacterAccessory
 					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("AccSlotChangedHandler", AccessTools.all, null, new[] { typeof(int) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
 					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("ToggleByClothesState", AccessTools.all, null, new[] { typeof(int), typeof(int) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
 					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("ToggleByShoesType", AccessTools.all, null, new[] { typeof(int), typeof(int) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
+					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("SyncOutfitVirtualGroupInfo", AccessTools.all, null, new[] { typeof(int) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
 				}
 			}
 
@@ -70,6 +71,14 @@ namespace CharacterAccessory
 					if (!_installed) return;
 					_chaCtrl = ChaControl;
 					_pluginCtrl = GetController(_chaCtrl);
+				}
+
+				internal object GetExtDataLink(int _coordinateIndex)
+				{
+					object CharaTriggerInfo = Traverse.Create(_pluginCtrl).Field("CharaTriggerInfo").GetValue();
+					if (CharaTriggerInfo == null)
+						return null;
+					return CharaTriggerInfo.RefTryGetValue(_coordinateIndex);
 				}
 
 				internal void Reset()
@@ -105,17 +114,17 @@ namespace CharacterAccessory
 
 					CharacterAccessoryController _controller = CharacterAccessory.GetController(_chaCtrl);
 					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
-					List<int> _slots = _controller.PartsInfo.Keys.ToList();
-#if DEBUG
-					DebugMsg(LogLevel.Warning, $"[AccStateSync][Backup][{_chaCtrl.GetFullname()}][slots: {string.Join(",", _slots.Select(x => x.ToString()).ToArray())}]");
-#endif
-					object OutfitTriggerInfo = Traverse.Create(_pluginCtrl).Field("CharaTriggerInfo").GetValue().RefElementAt(_coordinateIndex);
-					if (OutfitTriggerInfo == null) return;
+					List<int> _slots = _controller.PartsInfo?.Keys?.ToList();
 
-					object Parts = Traverse.Create(OutfitTriggerInfo).Property("Parts").GetValue();
+					object _extdataLink = GetExtDataLink(_coordinateIndex);
+					if (_extdataLink == null) return;
+
+					object Parts = Traverse.Create(_extdataLink).Property("Parts").GetValue();
 					List<int> _keys = Traverse.Create(Parts).Property("Keys").GetValue<ICollection<int>>().ToList();
 					//List<int> _keys = new List<int>((Parts as IDictionary).Keys as ICollection<int>);
+#if DEBUG
 					DebugMsg(LogLevel.Warning, $"[AccStateSync][Backup][{_chaCtrl.GetFullname()}][keys: {string.Join(",", _keys.Select(x => x.ToString()).ToArray())}]");
+#endif
 					foreach (int _slotIndex in _keys)
 					{
 						object x = Parts.RefTryGetValue(_slotIndex);
@@ -133,10 +142,10 @@ namespace CharacterAccessory
 					if (!_installed) return;
 
 					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
-					object OutfitTriggerInfo = Traverse.Create(_pluginCtrl).Field("CharaTriggerInfo").GetValue().RefElementAt(_coordinateIndex);
-					if (OutfitTriggerInfo == null) return;
+					object _extdataLink = GetExtDataLink(_coordinateIndex);
+					if (_extdataLink == null) return;
 
-					Traverse _traverse = Traverse.Create(OutfitTriggerInfo).Property("Parts");
+					Traverse _traverse = Traverse.Create(_extdataLink).Property("Parts");
 					object Parts = _traverse.GetValue();
 					foreach (KeyValuePair<int, object> x in _charaAccData)
 					{
@@ -176,10 +185,10 @@ namespace CharacterAccessory
 					RemovePartsInfo(ev.DestinationSlotIndex);
 
 					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
-					object OutfitTriggerInfo = Traverse.Create(_pluginCtrl).Field("CharaTriggerInfo").GetValue().RefElementAt(_coordinateIndex);
-					if (OutfitTriggerInfo == null) return;
+					object _extdataLink = GetExtDataLink(_coordinateIndex);
+					if (_extdataLink == null) return;
 
-					object Parts = Traverse.Create(OutfitTriggerInfo).Property("Parts").GetValue();
+					object Parts = Traverse.Create(_extdataLink).Property("Parts").GetValue();
 					object AccTriggerInfo = Parts.RefTryGetValue(ev.SourceSlotIndex);
 					if (AccTriggerInfo == null) return;
 
@@ -193,10 +202,10 @@ namespace CharacterAccessory
 				{
 					if (!_installed) return;
 
-					object OutfitTriggerInfo = Traverse.Create(_pluginCtrl).Field("CharaTriggerInfo").GetValue().RefElementAt(_coordinateIndex);
-					if (OutfitTriggerInfo == null) return;
+					object _extdataLink = GetExtDataLink(_coordinateIndex);
+					if (_extdataLink == null) return;
 
-					Traverse.Create(OutfitTriggerInfo).Property("Parts").Method("Remove", new object[] { _slotIndex }).GetValue();
+					Traverse.Create(_extdataLink).Property("Parts").Method("Remove", new object[] { _slotIndex }).GetValue();
 				}
 
 				internal void InitCurOutfitTriggerInfo(string _caller)

@@ -36,6 +36,8 @@ namespace CharacterAccessory
 					Assembly _assembly = _instance.GetType().Assembly;
 					_types["MaterialRouterController"] = _assembly.GetType("MaterialRouter.MaterialRouter+MaterialRouterController");
 					_types["RouteRule"] = _assembly.GetType("MaterialRouter.MaterialRouter+RouteRule");
+
+					HooksInstance["General"].Patch(_types["MaterialRouterController"].GetMethod("BuildCheckList", AccessTools.all), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
 				}
 			}
 
@@ -58,6 +60,14 @@ namespace CharacterAccessory
 
 					_chaCtrl = ChaControl;
 					_pluginCtrl = GetController(_chaCtrl);
+				}
+
+				internal object GetExtDataLink(int _coordinateIndex)
+				{
+					object OutfitTriggers = Traverse.Create(_pluginCtrl).Field("OutfitTriggers").GetValue();
+					if (OutfitTriggers == null)
+						return null;
+					return OutfitTriggers.RefTryGetValue(_coordinateIndex);
 				}
 
 				internal void Reset()
@@ -92,19 +102,15 @@ namespace CharacterAccessory
 
 					CharacterAccessoryController _controller = CharacterAccessory.GetController(_chaCtrl);
 					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
-					List<int> _slots = _controller.PartsInfo.Keys.ToList();
+					List<int> _slots = _controller.PartsInfo?.Keys?.ToList();
 
-					object OutfitTriggers = Traverse.Create(_pluginCtrl).Field("OutfitTriggers").GetValue();
-					//DebugMsg(LogLevel.Warning, $"[MaterialRouter][Backup][{_chaCtrl.GetFullname()}][OutfitTriggers.Count: {(OutfitTriggers as IDictionary).Count}]");
+					object _extdataLink = GetExtDataLink(_coordinateIndex);
+					if (_extdataLink == null) return;
 
-					object CurOutfitTrigger = OutfitTriggers.RefTryGetValue(_coordinateIndex);
-					if (CurOutfitTrigger == null) return;
-					//DebugMsg(LogLevel.Warning, $"[MaterialRouter][Backup][CurOutfitTrigger.Count: {(CurOutfitTrigger as IList).Count}]");
-
-					int n = (CurOutfitTrigger as IList).Count;
+					int n = (_extdataLink as IList).Count;
 					for (int i = 0; i < n; i++)
 					{
-						object _rule = CurOutfitTrigger.RefElementAt(i);
+						object _rule = _extdataLink.RefElementAt(i);
 						string _path = Traverse.Create(_rule).Property("GameObjectPath").GetValue<string>();
 						if (!_path.Contains($"/ca_slot")) continue;
 
@@ -122,13 +128,13 @@ namespace CharacterAccessory
 				internal void Restore()
 				{
 					if (!_installed) return;
-					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
 
-					object CurOutfitTrigger = Traverse.Create(_pluginCtrl).Field("OutfitTriggers").GetValue().RefTryGetValue(_coordinateIndex);
-					if (CurOutfitTrigger == null) return;
+					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
+					object _extdataLink = GetExtDataLink(_coordinateIndex);
+					if (_extdataLink == null) return;
 
 					for (int i = 0; i < _charaAccData.Count; i++)
-						Traverse.Create(CurOutfitTrigger).Method("Add", new object[] { _charaAccData[i].JsonClone() }).GetValue();
+						Traverse.Create(_extdataLink).Method("Add", new object[] { _charaAccData[i].JsonClone() }).GetValue();
 				}
 
 				internal void CopyPartsInfo(AccessoryCopyEventArgs ev)

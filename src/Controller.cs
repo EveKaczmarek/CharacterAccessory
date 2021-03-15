@@ -45,6 +45,8 @@ namespace CharacterAccessory
 
 			protected override void Start()
 			{
+				if (KoikatuAPI.GetCurrentGameMode() == GameMode.MainGame)
+					return;
 				HairAccessoryCustomizer = new HairAccessoryCustomizerSupport.UrineBag(ChaControl);
 				MaterialEditor = new MaterialEditorSupport.UrineBag(ChaControl);
 				MaterialRouter = new MaterialRouterSupport.UrineBag(ChaControl);

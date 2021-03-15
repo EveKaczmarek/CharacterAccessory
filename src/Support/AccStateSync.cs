@@ -23,6 +23,7 @@ namespace CharacterAccessory
 			private static bool _installed = false;
 			private static bool _legacy = false;
 			private static Dictionary<string, Type> _types = new Dictionary<string, Type>();
+			private static Dictionary<string, MethodInfo> _methods = new Dictionary<string, MethodInfo>();
 
 			internal static void Init()
 			{
@@ -46,11 +47,14 @@ namespace CharacterAccessory
 					_types["AccTriggerInfo"] = _assembly.GetType("AccStateSync.AccStateSync+AccTriggerInfo");
 
 					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("SetAccessoryStateAll", AccessTools.all, null, new[] { typeof(bool) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
-					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("SyncAllAccToggle", AccessTools.all, null, new Type[0], null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
+					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("SyncAllAccToggle", AccessTools.all), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
 					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("AccSlotChangedHandler", AccessTools.all, null, new[] { typeof(int) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
 					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("ToggleByClothesState", AccessTools.all, null, new[] { typeof(int), typeof(int) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
 					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("ToggleByShoesType", AccessTools.all, null, new[] { typeof(int), typeof(int) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
 					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("SyncOutfitVirtualGroupInfo", AccessTools.all, null, new[] { typeof(int) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
+
+					_methods["CloneSlotTriggerInfo"] = _types["AccStateSyncController"].GetMethod("CloneSlotTriggerInfo", AccessTools.all, null, new[] { typeof(int), typeof(int), typeof(int), typeof(int) }, null);
+					Logger.LogWarning($"[AccStateSyncSupport][CloneSlotTriggerInfo: {!(_methods["CloneSlotTriggerInfo"] == null)}]");
 				}
 			}
 
@@ -159,6 +163,13 @@ namespace CharacterAccessory
 				{
 					if (!_installed) return;
 
+					if (_methods["CloneSlotTriggerInfo"] != null)
+					{
+						foreach (int _slotIndex in ev.CopiedSlotIndexes)
+							Traverse.Create(_pluginCtrl).Method("CloneSlotTriggerInfo", new object[] { _slotIndex, _slotIndex, ev.CopySource, ev.CopyDestination }).GetValue();
+						return;
+					}
+
 					object CharaTriggerInfo = Traverse.Create(_pluginCtrl).Field("CharaTriggerInfo").GetValue();
 					object _src = CharaTriggerInfo.RefElementAt((int) ev.CopySource);
 					object _dst = CharaTriggerInfo.RefElementAt((int) ev.CopyDestination);
@@ -182,9 +193,16 @@ namespace CharacterAccessory
 				internal void TransferPartsInfo(AccessoryTransferEventArgs ev)
 				{
 					if (!_installed) return;
-					RemovePartsInfo(ev.DestinationSlotIndex);
 
 					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
+					if (_methods["CloneSlotTriggerInfo"] != null)
+					{
+						Traverse.Create(_pluginCtrl).Method("CloneSlotTriggerInfo", new object[] { ev.SourceSlotIndex, ev.DestinationSlotIndex, _coordinateIndex, _coordinateIndex }).GetValue();
+						return;
+					}
+
+					RemovePartsInfo(ev.DestinationSlotIndex);
+
 					object _extdataLink = GetExtDataLink(_coordinateIndex);
 					if (_extdataLink == null) return;
 

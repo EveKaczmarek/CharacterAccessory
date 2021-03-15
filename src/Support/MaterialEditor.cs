@@ -23,6 +23,7 @@ namespace CharacterAccessory
 		internal static class MaterialEditorSupport
 		{
 			private static BaseUnityPlugin _instance = null;
+			private static bool _legacy = false;
 			private static Dictionary<string, Type> _types = new Dictionary<string, Type>();
 
 			private static readonly List<string> _containerKeys = new List<string>() { "RendererPropertyList", "MaterialShaderList", "MaterialFloatPropertyList", "MaterialColorPropertyList", "MaterialTexturePropertyList" };
@@ -37,6 +38,14 @@ namespace CharacterAccessory
 				_types["MaterialAPI"] = _assembly.GetType("MaterialEditorAPI.MaterialAPI");
 				_types["MaterialEditorCharaController"] = _assembly.GetType("KK_Plugins.MaterialEditor.MaterialEditorCharaController");
 				_types["ObjectType"] = _assembly.GetType("KK_Plugins.MaterialEditor.MaterialEditorCharaController+ObjectType");
+
+				_legacy = _pluginInfo.Metadata.Version.CompareTo(new Version("3.0")) < 0;
+//#if DEBUG
+				if (_legacy)
+					Logger.LogWarning($"Material Editor version {_pluginInfo.Metadata.Version} found, running in legacy mode");
+//#endif
+				if (!_legacy)
+					_containerKeys.Add("MaterialCopyList");
 			}
 
 			internal static CharaCustomFunctionController GetController(ChaControl _chaCtrl) => Traverse.Create(_instance).Method("GetCharaController", new object[] { _chaCtrl }).GetValue<CharaCustomFunctionController>();
@@ -108,7 +117,8 @@ namespace CharacterAccessory
 						{
 							object x = _extdataLink[_key].RefElementAt(i).JsonClone(); // should I null cheack this?
 
-							if (Traverse.Create(x).Field("ObjectType").GetValue<int>() != (int) ObjectType.Accessory) continue;
+							//if (Traverse.Create(x).Field("ObjectType").GetValue<int>() != (int) ObjectType.Accessory) continue;
+							if (Traverse.Create(x).Field("ObjectType").Method("ToString").GetValue<string>() != "Accessory") continue;
 							if (Traverse.Create(x).Field("CoordinateIndex").GetValue<int>() != _coordinateIndex) continue;
 							if (_slots.IndexOf(Traverse.Create(x).Field("Slot").GetValue<int>()) < 0) continue;
 
@@ -207,7 +217,8 @@ namespace CharacterAccessory
 				{
 					if (_obj == null) return null;
 					Traverse _traverse = Traverse.Create(_obj);
-					if (_traverse.Field("ObjectType").GetValue<int>() != (int) ObjectType.Accessory) return null;
+					//if (_traverse.Field("ObjectType").GetValue<int>() != (int) ObjectType.Accessory) return null;
+					if (_traverse.Field("ObjectType").Method("ToString").GetValue<string>() != "Accessory") return null;
 					if (_traverse.Field("CoordinateIndex").GetValue<int>() != _srcCoordinateIndex) return null;
 					_traverse.Field("CoordinateIndex").SetValue(_dstCoordinateIndex);
 					return _obj;
@@ -217,7 +228,8 @@ namespace CharacterAccessory
 				{
 					if (_obj == null) return null;
 					Traverse _traverse = Traverse.Create(_obj);
-					if (_traverse.Field("ObjectType").GetValue<int>() != (int) ObjectType.Accessory) return null;
+					//if (_traverse.Field("ObjectType").GetValue<int>() != (int) ObjectType.Accessory) return null;
+					if (_traverse.Field("ObjectType").Method("ToString").GetValue<string>() != "Accessory") return null;
 					if (_traverse.Field("CoordinateIndex").GetValue<int>() != _coordinateIndex) return null;
 					if (_traverse.Field("Slot").GetValue<int>() != _srcSlotIndex) return null;
 					_traverse.Field("Slot").SetValue(_dstSlotIndex);

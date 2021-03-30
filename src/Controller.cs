@@ -189,6 +189,11 @@ namespace CharacterAccessory
 					TaskLock();
 					ChaControl.StartCoroutine(OnCoordinateBeingLoadedCoroutine());
 				}
+				else
+				{
+					if (MakerAPI.InsideAndLoaded)
+						CustomBase.Instance.updateCustomUI = true;
+				}
 				base.OnCoordinateBeingLoaded(_coordinate);
 			}
 

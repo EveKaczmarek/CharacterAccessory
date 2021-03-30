@@ -40,11 +40,10 @@ namespace CharacterAccessory
 				_types["ObjectType"] = _assembly.GetType("KK_Plugins.MaterialEditor.MaterialEditorCharaController+ObjectType");
 
 				_legacy = _pluginInfo.Metadata.Version.CompareTo(new Version("3.0")) < 0;
-//#if DEBUG
+
 				if (_legacy)
 					Logger.LogWarning($"Material Editor version {_pluginInfo.Metadata.Version} found, running in legacy mode");
-//#endif
-				if (!_legacy)
+				else
 					_containerKeys.Add("MaterialCopyList");
 			}
 
@@ -217,7 +216,6 @@ namespace CharacterAccessory
 				{
 					if (_obj == null) return null;
 					Traverse _traverse = Traverse.Create(_obj);
-					//if (_traverse.Field("ObjectType").GetValue<int>() != (int) ObjectType.Accessory) return null;
 					if (_traverse.Field("ObjectType").Method("ToString").GetValue<string>() != "Accessory") return null;
 					if (_traverse.Field("CoordinateIndex").GetValue<int>() != _srcCoordinateIndex) return null;
 					_traverse.Field("CoordinateIndex").SetValue(_dstCoordinateIndex);
@@ -228,7 +226,6 @@ namespace CharacterAccessory
 				{
 					if (_obj == null) return null;
 					Traverse _traverse = Traverse.Create(_obj);
-					//if (_traverse.Field("ObjectType").GetValue<int>() != (int) ObjectType.Accessory) return null;
 					if (_traverse.Field("ObjectType").Method("ToString").GetValue<string>() != "Accessory") return null;
 					if (_traverse.Field("CoordinateIndex").GetValue<int>() != _coordinateIndex) return null;
 					if (_traverse.Field("Slot").GetValue<int>() != _srcSlotIndex) return null;

@@ -18,14 +18,18 @@ using KKAPI.Maker;
 namespace CharacterAccessory
 {
 	[BepInPlugin(GUID, PluginName, Version)]
-	[BepInDependency("marco.kkapi", "1.16")]
+	[BepInDependency("marco.kkapi")]
 	[BepInDependency("com.deathweasel.bepinex.materialeditor", "2.5")]
 	[BepInDependency("com.joan6694.illusionplugins.moreaccessories")]
 	public partial class CharacterAccessory : BaseUnityPlugin
 	{
 		public const string GUID = "madevil.kk.ca";
+#if DEBUG
+		public const string PluginName = "Character Accessory (Debug Build)";
+#else
 		public const string PluginName = "Character Accessory";
-		public const string Version = "1.1.0.0";
+#endif
+		public const string Version = "1.1.1.0";
 
 		internal static new ManualLogSource Logger;
 		internal static CharacterAccessory Instance;

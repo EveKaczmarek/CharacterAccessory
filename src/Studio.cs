@@ -70,7 +70,7 @@ namespace CharacterAccessory
 			internal static void StartupCheck(Scene _scene, LoadSceneMode _loadSceneMode)
 			{
 #if DEBUG
-				DebugMsg(LogLevel.Warning, $"[StartupCheck][{_scene.name}][{_loadSceneMode}]");
+				DebugMsg(BepInEx.Logging.LogLevel.Warning, $"[StartupCheck][{_scene.name}][{_loadSceneMode}]");
 #endif
 				if (!Loaded && _scene.name == "Studio")
 				{

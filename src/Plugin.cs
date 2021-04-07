@@ -14,6 +14,7 @@ using HarmonyLib;
 
 using KKAPI.Chara;
 using KKAPI.Maker;
+using KKAPI.Utilities;
 
 namespace CharacterAccessory
 {
@@ -29,7 +30,7 @@ namespace CharacterAccessory
 #else
 		public const string PluginName = "Character Accessory";
 #endif
-		public const string Version = "1.1.1.0";
+		public const string Version = "1.1.2.0";
 
 		internal static new ManualLogSource Logger;
 		internal static CharacterAccessory Instance;
@@ -97,12 +98,6 @@ namespace CharacterAccessory
 
 				MakerAPI.RegisterCustomSubCategories += RegisterCustomSubCategories;
 			}
-		}
-
-		internal sealed class ConfigurationManagerAttributes
-		{
-			//public int? Order;
-			public bool? IsAdvanced;
 		}
 
 		internal static void DebugMsg(LogLevel LogLevel, string LogMsg)

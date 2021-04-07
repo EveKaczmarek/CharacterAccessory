@@ -166,7 +166,7 @@ namespace CharacterAccessory
 					if (_methods["CloneSlotTriggerInfo"] != null)
 					{
 						foreach (int _slotIndex in ev.CopiedSlotIndexes)
-							Traverse.Create(_pluginCtrl).Method("CloneSlotTriggerInfo", new object[] { _slotIndex, _slotIndex, ev.CopySource, ev.CopyDestination }).GetValue();
+							Traverse.Create(_pluginCtrl).Method("CloneSlotTriggerInfo", new object[] { _slotIndex, _slotIndex, (int) ev.CopySource, (int) ev.CopyDestination }).GetValue();
 						return;
 					}
 

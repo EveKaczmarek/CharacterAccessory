@@ -122,7 +122,7 @@ namespace CharacterAccessory
 					return;
 				}
 
-				Logger.LogInfo($"[RestorePartsInfo][{ChaControl.GetFullname()}][Slots: {string.Join(",", PartsInfo.Keys.Select(Slot => Slot.ToString()).ToArray())}]");
+				DebugMsg(LogLevel.Info, $"[RestorePartsInfo][{ChaControl.GetFullname()}][Slots: {string.Join(",", PartsInfo.Keys.Select(Slot => Slot.ToString()).ToArray())}]");
 
 				foreach (KeyValuePair<int, ChaFileAccessory.PartsInfo> _part in PartsInfo)
 					MoreAccessoriesSupport.SetPartsInfo(ChaControl, _coordinateIndex, _part.Key, _part.Value);

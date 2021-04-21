@@ -118,7 +118,7 @@ namespace CharacterAccessory
 						foreach (int _slotIndex in _slots)
 						{
 							if (!_path.Contains($"/ca_slot{_slotIndex:00}/")) continue;
-							Logger.LogWarning($"[MaterialRouter][Backup][{_slotIndex}]");
+							DebugMsg(LogLevel.Warning, $"[MaterialRouter][Backup][{_slotIndex}]");
 							_charaAccData.Add(_rule.JsonClone());
 						}
 					}

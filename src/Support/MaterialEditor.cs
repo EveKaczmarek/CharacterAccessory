@@ -142,7 +142,7 @@ namespace CharacterAccessory
 							if (_tex != null)
 							{
 								_texData[(int) TexID] = Traverse.Create(_tex).Property("Data").GetValue<byte[]>();
-								Logger.LogWarning($"[TexID: {TexID}][Length: {_texData[(int) TexID].Length}]");
+								DebugMsg(LogLevel.Warning, $"[TexID: {TexID}][Length: {_texData[(int) TexID].Length}]");
 							}
 						}
 					}

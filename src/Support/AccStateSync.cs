@@ -49,12 +49,12 @@ namespace CharacterAccessory
 					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("SetAccessoryStateAll", AccessTools.all, null, new[] { typeof(bool) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
 					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("SyncAllAccToggle", AccessTools.all), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
 					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("AccSlotChangedHandler", AccessTools.all, null, new[] { typeof(int) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
-					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("ToggleByClothesState", AccessTools.all, null, new[] { typeof(int), typeof(int) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
-					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("ToggleByShoesType", AccessTools.all, null, new[] { typeof(int), typeof(int) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
+					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("ToggleByClothesState", AccessTools.all), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
+					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("ToggleByShoesType", AccessTools.all), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
 					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("SyncOutfitVirtualGroupInfo", AccessTools.all, null, new[] { typeof(int) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
 
 					_methods["CloneSlotTriggerInfo"] = _types["AccStateSyncController"].GetMethod("CloneSlotTriggerInfo", AccessTools.all, null, new[] { typeof(int), typeof(int), typeof(int), typeof(int) }, null);
-					Logger.LogWarning($"[AccStateSyncSupport][CloneSlotTriggerInfo: {!(_methods["CloneSlotTriggerInfo"] == null)}]");
+					DebugMsg(LogLevel.Warning, $"[AccStateSyncSupport][CloneSlotTriggerInfo: {!(_methods["CloneSlotTriggerInfo"] == null)}]");
 				}
 			}
 

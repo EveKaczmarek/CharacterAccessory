@@ -26,7 +26,7 @@ namespace CharacterAccessory
 
 			internal void TransferPartsInfo()
 			{
-				Logger.LogWarning($"[TransferPartsInfo][{ChaControl.GetFullname()}] fired");
+				DebugMsg(LogLevel.Warning, $"[TransferPartsInfo][{ChaControl.GetFullname()}] fired");
 
 				if (QueueList.Count == 0)
 				{

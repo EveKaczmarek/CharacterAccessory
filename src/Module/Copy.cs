@@ -18,7 +18,7 @@ namespace CharacterAccessory
 		{
 			internal void CopyPartsInfo()
 			{
-				Logger.LogWarning($"[CopyPartsInfo][{ChaControl.GetFullname()}] fired");
+				DebugMsg(LogLevel.Warning, $"[CopyPartsInfo][{ChaControl.GetFullname()}] fired");
 
 				if (!DuringLoading)
 				{

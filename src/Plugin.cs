@@ -20,7 +20,7 @@ namespace CharacterAccessory
 {
 	[BepInPlugin(GUID, PluginName, Version)]
 	[BepInDependency("marco.kkapi")]
-	[BepInDependency("com.deathweasel.bepinex.materialeditor", "2.5")]
+	[BepInDependency("com.deathweasel.bepinex.materialeditor", "3.0")]
 	[BepInDependency("com.joan6694.illusionplugins.moreaccessories")]
 	public partial class CharacterAccessory : BaseUnityPlugin
 	{
@@ -30,7 +30,7 @@ namespace CharacterAccessory
 #else
 		public const string PluginName = "Character Accessory";
 #endif
-		public const string Version = "1.1.2.0";
+		public const string Version = "1.1.3.0";
 
 		internal static new ManualLogSource Logger;
 		internal static CharacterAccessory Instance;

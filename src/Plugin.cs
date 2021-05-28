@@ -19,9 +19,9 @@ using KKAPI.Utilities;
 namespace CharacterAccessory
 {
 	[BepInPlugin(GUID, PluginName, Version)]
-	[BepInDependency("marco.kkapi")]
+	[BepInDependency("marco.kkapi", "1.17")]
 	[BepInDependency("com.deathweasel.bepinex.materialeditor", "3.0")]
-	[BepInDependency("com.joan6694.illusionplugins.moreaccessories")]
+	[BepInDependency("com.joan6694.illusionplugins.moreaccessories", "1.0.9")]
 	public partial class CharacterAccessory : BaseUnityPlugin
 	{
 		public const string GUID = "madevil.kk.ca";
@@ -30,7 +30,7 @@ namespace CharacterAccessory
 #else
 		public const string PluginName = "Character Accessory";
 #endif
-		public const string Version = "1.1.3.0";
+		public const string Version = "1.2.0.0";
 
 		internal static new ManualLogSource Logger;
 		internal static CharacterAccessory Instance;
@@ -42,6 +42,7 @@ namespace CharacterAccessory
 		internal static ConfigEntry<bool> CfgMAHookUpdateStudioUI { get; set; }
 
 		internal const int RefMax = 7;
+		internal const int PluginDataVersion = 2;
 		internal static List<string> SupportList = new List<string>();
 
 		private void Awake()

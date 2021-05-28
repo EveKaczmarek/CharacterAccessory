@@ -24,6 +24,9 @@ namespace CharacterAccessory
 			private static bool _legacy = false;
 			private static Dictionary<string, Type> _types = new Dictionary<string, Type>();
 			private static Dictionary<string, MethodInfo> _methods = new Dictionary<string, MethodInfo>();
+			private static readonly List<string> _containerKeys = new List<string>() { "TriggerPropertyList", "TriggerGroupList" };
+			private static Dictionary<string, string> _accParentNames = new Dictionary<string, string>();
+			private static Dictionary<string, int> _guidMapping = new Dictionary<string, int>();
 
 			internal static void Init()
 			{
@@ -32,10 +35,10 @@ namespace CharacterAccessory
 
 				if (_instance != null)
 				{
-					_legacy = _pluginInfo.Metadata.Version.CompareTo(new Version("3.1.2")) < 0;
+					_legacy = _pluginInfo.Metadata.Version.CompareTo(new Version("4.0.0.0")) < 0;
 					if (_legacy)
 					{
-						Logger.LogError($"AccStateSync version {_pluginInfo.Metadata.Version} found, minimun version 3.1.2 is reqired");
+						Logger.LogError($"AccStateSync version {_pluginInfo.Metadata.Version} found, minimun version 4 is reqired");
 						return;
 					}
 
@@ -44,17 +47,11 @@ namespace CharacterAccessory
 
 					Assembly _assembly = _instance.GetType().Assembly;
 					_types["AccStateSyncController"] = _assembly.GetType("AccStateSync.AccStateSync+AccStateSyncController");
-					_types["AccTriggerInfo"] = _assembly.GetType("AccStateSync.AccStateSync+AccTriggerInfo");
+					_types["TriggerProperty"] = _assembly.GetType("AccStateSync.AccStateSync+TriggerProperty");
+					_types["TriggerGroup"] = _assembly.GetType("AccStateSync.AccStateSync+TriggerGroup");
 
-					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("SetAccessoryStateAll", AccessTools.all, null, new[] { typeof(bool) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
-					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("SyncAllAccToggle", AccessTools.all), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
-					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("AccSlotChangedHandler", AccessTools.all, null, new[] { typeof(int) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
-					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("ToggleByClothesState", AccessTools.all), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
-					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("ToggleByShoesType", AccessTools.all), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
-					HooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("SyncOutfitVirtualGroupInfo", AccessTools.all, null, new[] { typeof(int) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
-
-					_methods["CloneSlotTriggerInfo"] = _types["AccStateSyncController"].GetMethod("CloneSlotTriggerInfo", AccessTools.all, null, new[] { typeof(int), typeof(int), typeof(int), typeof(int) }, null);
-					DebugMsg(LogLevel.Warning, $"[AccStateSyncSupport][CloneSlotTriggerInfo: {!(_methods["CloneSlotTriggerInfo"] == null)}]");
+					foreach (object _key in Enum.GetValues(typeof(ChaAccessoryDefine.AccessoryParentKey)))
+						_accParentNames[_key.ToString()] = ChaAccessoryDefine.dictAccessoryParent[(int) _key];
 				}
 			}
 
@@ -68,76 +65,171 @@ namespace CharacterAccessory
 			{
 				private readonly ChaControl _chaCtrl;
 				private readonly CharaCustomFunctionController _pluginCtrl;
-				private Dictionary<int, object> _charaAccData = new Dictionary<int, object>();
+				private Dictionary<string, object> _charaAccData = new Dictionary<string, object>();
 
 				internal UrineBag(ChaControl ChaControl)
 				{
 					if (!_installed) return;
 					_chaCtrl = ChaControl;
 					_pluginCtrl = GetController(_chaCtrl);
+
+					foreach (string _key in _containerKeys)
+					{
+						Type _type = _types[_key.Replace("List", "")];
+						Type _generic = typeof(List<>).MakeGenericType(_type);
+						_charaAccData[_key] = Activator.CreateInstance(_generic);
+					}
 				}
 
-				internal object GetExtDataLink(int _coordinateIndex)
+				internal object GetTriggerPropertyList()
 				{
-					object CharaTriggerInfo = Traverse.Create(_pluginCtrl).Field("CharaTriggerInfo").GetValue();
-					if (CharaTriggerInfo == null)
-						return null;
-					return CharaTriggerInfo.RefTryGetValue(_coordinateIndex);
+					return Traverse.Create(_pluginCtrl).Field("TriggerPropertyList").GetValue();
+				}
+
+				internal object GetTriggerGroupList()
+				{
+					return Traverse.Create(_pluginCtrl).Field("TriggerGroupList").GetValue();
 				}
 
 				internal void Reset()
 				{
 					if (!_installed) return;
-					_charaAccData.Clear();
+					(_charaAccData["TriggerPropertyList"] as IList).Clear();
+					(_charaAccData["TriggerGroupList"] as IList).Clear();
+					_guidMapping.Clear();
 				}
 
-				internal Dictionary<int, string> Save()
+				internal Dictionary<string, string> Save()
 				{
 					if (!_installed) return null;
-					Dictionary<int, string> _json = new Dictionary<int, string>();
-					foreach (KeyValuePair<int, object> x in _charaAccData)
-						_json[x.Key] = JSONSerializer.Serialize(_types["AccTriggerInfo"], x.Value);
+					Dictionary<string, string> _json = new Dictionary<string, string>();
+					_json["TriggerPropertyList"] = JSONSerializer.Serialize(_charaAccData["TriggerPropertyList"].GetType(), _charaAccData["TriggerPropertyList"]);
+					_json["TriggerGroupList"] = JSONSerializer.Serialize(_charaAccData["TriggerGroupList"].GetType(), _charaAccData["TriggerGroupList"]);
+
 					return _json;
 				}
 
-				internal void Load(Dictionary<int, string> _json)
+				internal void Migrate(Dictionary<int, string> _json)
 				{
 					if (!_installed) return;
-					_charaAccData.Clear();
+					Reset();
 					if (_json == null) return;
 
-					foreach (KeyValuePair<int, string> x in _json)
-						_charaAccData[x.Key] = JSONSerializer.Deserialize(_types["AccTriggerInfo"], x.Value);
+					List<AccTriggerInfo> _oldData = new List<AccTriggerInfo>();
+					int _coordinateIndex = -1; // _chaCtrl.fileStatus.coordinateType;
+					int _baseID = 9; //GetNextGroupID(_coordinateIndex);
+
+					Dictionary<string, int> _oldGroup = new Dictionary<string, int>();
+
+					foreach (string x in _json.Values)
+					{
+						AccTriggerInfo _trigger = JSONSerializer.Deserialize<AccTriggerInfo>(x);
+						_oldData.Add(_trigger);
+						if (_trigger.Kind >= 9)
+							_oldGroup[_trigger.Group] = _trigger.Kind;
+					}
+
+					_oldGroup = _oldGroup.OrderBy(x => x.Value).ThenBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value);
+
+					Dictionary<string, int> _mapping = new Dictionary<string, int>();
+					foreach (string _name in _oldGroup.Keys)
+					{
+						_mapping[_name] = _baseID;
+						string _label = _accParentNames.ContainsKey(_name) ? _accParentNames[_name] : "";
+						object _group = Activator.CreateInstance(_types["TriggerGroup"], new object[] { _coordinateIndex, _baseID, _label });
+						(_charaAccData["TriggerGroupList"] as IList).Add(_group);
+						_baseID ++;
+					}
+
+					foreach (AccTriggerInfo _info in _oldData)
+					{
+						if (_info.Kind >= 9)
+						{
+							/*
+							if (!_mapping.ContainsKey(_info.Group))
+								Logger.LogError($"[_mapping] missing key [{_info.Group}]");
+							else
+							*/
+								_info.Kind = _mapping[_info.Group];
+							{
+								object _trigger = Activator.CreateInstance(_types["TriggerProperty"], new object[] { _coordinateIndex, _info.Slot, _info.Kind, 0, _info.State[0], 0 });
+								(_charaAccData["TriggerPropertyList"] as IList).Add(_trigger);
+							}
+							{
+								object _trigger = Activator.CreateInstance(_types["TriggerProperty"], new object[] { _coordinateIndex, _info.Slot, _info.Kind, 1, _info.State[3], 0 });
+								(_charaAccData["TriggerPropertyList"] as IList).Add(_trigger);
+							}
+						}
+						else
+						{
+							for (int i = 0; i <= 3; i++)
+							{
+								object _trigger = Activator.CreateInstance(_types["TriggerProperty"], new object[] { _coordinateIndex, _info.Slot, _info.Kind, i, _info.State[i], 0 });
+								(_charaAccData["TriggerPropertyList"] as IList).Add(_trigger);
+							}
+						}
+					}
+
+					for (int i = 0; i < (_charaAccData["TriggerGroupList"] as IList).Count; i++)
+					{
+						object x = _charaAccData["TriggerGroupList"].RefElementAt(i);
+						int _kind = Traverse.Create(x).Property("Kind").GetValue<int>();
+						string _guid = Traverse.Create(x).Property("GUID").GetValue<string>();
+						_guidMapping[_guid] = _kind;
+					}
+				}
+
+				internal void Load(Dictionary<string, string> _json)
+				{
+					if (!_installed) return;
+					Reset();
+					if (_json == null) return;
+
+					if (!_json.ContainsKey("TriggerPropertyList")) return;
+
+					_charaAccData["TriggerPropertyList"] = JSONSerializer.Deserialize(_charaAccData["TriggerPropertyList"].GetType(), _json["TriggerPropertyList"]);
+					_charaAccData["TriggerGroupList"] = JSONSerializer.Deserialize(_charaAccData["TriggerGroupList"].GetType(), _json["TriggerGroupList"]);
+					for (int i = 0; i < (_charaAccData["TriggerGroupList"] as IList).Count; i++)
+					{
+						object x = _charaAccData["TriggerGroupList"].RefElementAt(i);
+						int _kind = Traverse.Create(x).Property("Kind").GetValue<int>();
+						string _guid = Traverse.Create(x).Property("GUID").GetValue<string>();
+						_guidMapping[_guid] = _kind;
+					}
 				}
 
 				internal void Backup()
 				{
 					if (!_installed) return;
+					Reset();
+					RefreshCache();
 
-					_charaAccData.Clear();
+					object TriggerPropertyList = Traverse.Create(_pluginCtrl).Field("_cachedCoordinatePropertyList").GetValue();
+					object TriggerGroupList = Traverse.Create(_pluginCtrl).Field("_cachedCoordinateGroupList").GetValue();
+					if (TriggerPropertyList == null) return;
 
 					CharacterAccessoryController _controller = CharacterAccessory.GetController(_chaCtrl);
-					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
-					List<int> _slots = _controller.PartsInfo?.Keys?.ToList();
+					HashSet<int> _slots = new HashSet<int>(_controller.PartsInfo?.Keys);
 
-					object _extdataLink = GetExtDataLink(_coordinateIndex);
-					if (_extdataLink == null) return;
-
-					object Parts = Traverse.Create(_extdataLink).Property("Parts").GetValue();
-					List<int> _keys = Traverse.Create(Parts).Property("Keys").GetValue<ICollection<int>>().ToList();
-					//List<int> _keys = new List<int>((Parts as IDictionary).Keys as ICollection<int>);
-#if DEBUG
-					DebugMsg(LogLevel.Warning, $"[AccStateSync][Backup][{_chaCtrl.GetFullname()}][keys: {string.Join(",", _keys.Select(x => x.ToString()).ToArray())}]");
-#endif
-					foreach (int _slotIndex in _keys)
+					for (int i = 0; i < (TriggerPropertyList as IList).Count; i++)
 					{
-						object x = Parts.RefTryGetValue(_slotIndex);
-						if (x == null) continue;
-						/*
-						int Kind = Traverse.Create(x).Property("Kind").GetValue<int>();
-						if (Kind >= 9)
-						*/
-							_charaAccData[_slotIndex] = x.JsonClone();
+						object x = TriggerPropertyList.RefElementAt(i).JsonClone();
+						if (!_slots.Contains(Traverse.Create(x).Property("Slot").GetValue<int>())) continue;
+
+						Traverse.Create(x).Property("Coordinate").SetValue(-1);
+						(_charaAccData["TriggerPropertyList"] as IList).Add(x);
+					}
+
+					for (int i = 0; i < (TriggerGroupList as IList).Count; i++)
+					{
+						object x = TriggerGroupList.RefElementAt(i).JsonClone();
+
+						Traverse.Create(x).Property("Coordinate").SetValue(-1);
+						(_charaAccData["TriggerGroupList"] as IList).Add(x);
+
+						int _kind = Traverse.Create(x).Property("Kind").GetValue<int>();
+						string _guid = Traverse.Create(x).Property("GUID").GetValue<string>();
+						_guidMapping[_guid] = _kind;
 					}
 				}
 
@@ -145,49 +237,61 @@ namespace CharacterAccessory
 				{
 					if (!_installed) return;
 
-					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
-					object _extdataLink = GetExtDataLink(_coordinateIndex);
-					if (_extdataLink == null) return;
+					object TriggerPropertyList = Traverse.Create(_pluginCtrl).Field("TriggerPropertyList").GetValue();
+					object TriggerGroupList = Traverse.Create(_pluginCtrl).Field("TriggerGroupList").GetValue();
+					if (TriggerPropertyList == null) return;
 
-					Traverse _traverse = Traverse.Create(_extdataLink).Property("Parts");
-					object Parts = _traverse.GetValue();
-					foreach (KeyValuePair<int, object> x in _charaAccData)
+					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
+
+					Dictionary<int, int> _mapping = new Dictionary<int, int>();
+					Dictionary<int, bool> _newGroupCheck = new Dictionary<int, bool>();
+
+					foreach (string _guid in _guidMapping.Keys)
 					{
-						if (Parts.RefTryGetValue(x.Key) != null)
-							_traverse.Method("Remove", new object[] { x.Key }).GetValue();
-						_traverse.Method("Add", new object[] { x.Key, x.Value.JsonClone() }).GetValue();
+						object _group = GetTriggerGroupByGUID(_coordinateIndex, _guid);
+						int _kindOld = _guidMapping[_guid];
+						if (_group == null)
+						{
+							int _kindNew = GetNextGroupID(_coordinateIndex);
+							_mapping[_kindOld] = _kindNew;
+							//_guidMapping[_guid] = _kindNew; // shouldn't change this, keep old value for lookup
+							_newGroupCheck[_kindOld] = true;
+						}
+						else
+							_newGroupCheck[_kindOld] = false;
 					}
+
+					foreach (object x in _charaAccData["TriggerPropertyList"] as IList)
+					{
+						object _copy = x.JsonClone();
+						Traverse.Create(_copy).Property("Coordinate").SetValue(_coordinateIndex);
+						int _kind = Traverse.Create(_copy).Property("RefKind").GetValue<int>();
+						if (_mapping.ContainsKey(_kind))
+							Traverse.Create(_copy).Property("RefKind").SetValue(_mapping[_kind]);
+						(TriggerPropertyList as IList).Add(_copy);
+					}
+					foreach (object x in _charaAccData["TriggerGroupList"] as IList)
+					{
+						object _copy = x.JsonClone();
+						int _kind = Traverse.Create(_copy).Property("Kind").GetValue<int>();
+						if (!_newGroupCheck[_kind]) continue;
+
+						Traverse.Create(_copy).Property("Coordinate").SetValue(_coordinateIndex);
+						if (_mapping.ContainsKey(_kind))
+							Traverse.Create(_copy).Property("Kind").SetValue(_mapping[_kind]);
+						(TriggerGroupList as IList).Add(_copy);
+					}
+
+					RefreshCache();
 				}
 
 				internal void CopyPartsInfo(AccessoryCopyEventArgs ev)
 				{
 					if (!_installed) return;
 
-					if (_methods["CloneSlotTriggerInfo"] != null)
-					{
-						foreach (int _slotIndex in ev.CopiedSlotIndexes)
-							Traverse.Create(_pluginCtrl).Method("CloneSlotTriggerInfo", new object[] { _slotIndex, _slotIndex, (int) ev.CopySource, (int) ev.CopyDestination }).GetValue();
-						return;
-					}
-
-					object CharaTriggerInfo = Traverse.Create(_pluginCtrl).Field("CharaTriggerInfo").GetValue();
-					object _src = CharaTriggerInfo.RefElementAt((int) ev.CopySource);
-					object _dst = CharaTriggerInfo.RefElementAt((int) ev.CopyDestination);
-					if (_src == null || _dst == null) return;
-
-					object _srcOutfitTriggerInfo = Traverse.Create(_src).Property("Parts").GetValue();
-					object _dstOutfitTriggerInfo = Traverse.Create(_dst).Property("Parts").GetValue();
-					Traverse _traverseDst = Traverse.Create(_dst).Property("Parts");
 					foreach (int _slotIndex in ev.CopiedSlotIndexes)
-					{
-						if (_dstOutfitTriggerInfo.RefTryGetValue(_slotIndex) != null)
-							_traverseDst.Method("Remove", new object[] { _slotIndex }).GetValue();
-
-						object _copy = _srcOutfitTriggerInfo.RefTryGetValue(_slotIndex);
-						if (_copy == null) continue;
-
-						_traverseDst.Method("Add", new object[] { _slotIndex, _copy.JsonClone() }).GetValue();
-					}
+						Traverse.Create(_pluginCtrl).Method("CloneSlotTriggerProperty", new object[] { _slotIndex, _slotIndex, (int) ev.CopySource, (int) ev.CopyDestination }).GetValue();
+					return;
 				}
 
 				internal void TransferPartsInfo(AccessoryTransferEventArgs ev)
@@ -195,24 +299,7 @@ namespace CharacterAccessory
 					if (!_installed) return;
 
 					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
-					if (_methods["CloneSlotTriggerInfo"] != null)
-					{
-						Traverse.Create(_pluginCtrl).Method("CloneSlotTriggerInfo", new object[] { ev.SourceSlotIndex, ev.DestinationSlotIndex, _coordinateIndex, _coordinateIndex }).GetValue();
-						return;
-					}
-
-					RemovePartsInfo(ev.DestinationSlotIndex);
-
-					object _extdataLink = GetExtDataLink(_coordinateIndex);
-					if (_extdataLink == null) return;
-
-					object Parts = Traverse.Create(_extdataLink).Property("Parts").GetValue();
-					object AccTriggerInfo = Parts.RefTryGetValue(ev.SourceSlotIndex);
-					if (AccTriggerInfo == null) return;
-
-					object _copy = AccTriggerInfo.JsonClone();
-					Traverse.Create(_copy).Property("Slot").SetValue(ev.DestinationSlotIndex);
-					Traverse.Create(Parts).Method("Add", new object[] { ev.DestinationSlotIndex, _copy }).GetValue();
+					Traverse.Create(_pluginCtrl).Method("CloneSlotTriggerProperty", new object[] { ev.SourceSlotIndex, ev.DestinationSlotIndex, _coordinateIndex, _coordinateIndex }).GetValue();
 				}
 
 				internal void RemovePartsInfo(int _slotIndex) => RemovePartsInfo(_chaCtrl.fileStatus.coordinateType, _slotIndex);
@@ -220,10 +307,31 @@ namespace CharacterAccessory
 				{
 					if (!_installed) return;
 
-					object _extdataLink = GetExtDataLink(_coordinateIndex);
-					if (_extdataLink == null) return;
+					Traverse.Create(_pluginCtrl).Method("RemoveSlotTriggerProperty", new object[] { _coordinateIndex, _slotIndex }).GetValue();
+				}
 
-					Traverse.Create(_extdataLink).Property("Parts").Method("Remove", new object[] { _slotIndex }).GetValue();
+				internal object GetTriggerGroupByGUID(int _coordinateIndex, string _guid)
+				{
+					if (!_installed) return -1;
+					return Traverse.Create(_pluginCtrl).Method("GetTriggerGroupByGUID", new object[] { _coordinateIndex, _guid }).GetValue();
+				}
+
+				internal int GetNextGroupID(int _coordinateIndex)
+				{
+					if (!_installed) return -1;
+					return Traverse.Create(_pluginCtrl).Method("GetNextGroupID", new object[] { _coordinateIndex }).GetValue<int>();
+				}
+
+				internal void PackGroupID(int _coordinateIndex)
+				{
+					if (!_installed) return;
+					Traverse.Create(_pluginCtrl).Method("PackGroupID", new object[] { _coordinateIndex }).GetValue();
+				}
+
+				internal void RefreshCache()
+				{
+					if (!_installed) return;
+					Traverse.Create(_pluginCtrl).Method("RefreshCache").GetValue();
 				}
 
 				internal void InitCurOutfitTriggerInfo(string _caller)
@@ -238,11 +346,21 @@ namespace CharacterAccessory
 					Traverse.Create(_pluginCtrl).Method("SetAccessoryStateAll", new object[] { _show }).GetValue();
 				}
 
-				internal void SyncAllAccToggle()
+				internal void SyncAllAccToggle(string _caller)
 				{
 					if (!_installed) return;
-					Traverse.Create(_pluginCtrl).Method("SyncAllAccToggle").GetValue();
+					Traverse.Create(_pluginCtrl).Method("SyncAllAccToggle", new object[] { _caller }).GetValue();
 				}
+			}
+
+			public class AccTriggerInfo
+			{
+				public int Slot { get; set; }
+				public int Kind { get; set; } = -1;
+				public string Group { get; set; } = "";
+				public List<bool> State { get; set; } = new List<bool>() { true, false, false, false };
+
+				public AccTriggerInfo(int slot) { Slot = slot; }
 			}
 		}
 	}

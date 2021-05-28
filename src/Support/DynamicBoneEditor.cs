@@ -84,7 +84,7 @@ namespace CharacterAccessory
 				internal void Load(List<string> _json)
 				{
 					if (!_installed) return;
-					_charaAccData?.Clear();
+					_charaAccData.Clear();
 					if (_json == null) return;
 
 					foreach (string x in _json)

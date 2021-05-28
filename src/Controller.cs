@@ -67,7 +67,7 @@ namespace CharacterAccessory
 			{
 				TaskUnlock();
 
-				PluginData ExtendedData = new PluginData();
+				PluginData ExtendedData = new PluginData() { version = PluginDataVersion };
 
 				ExtendedData.data.Add("MoreAccessoriesExtdata", MessagePackSerializer.Serialize(PartsInfo));
 				ExtendedData.data.Add("ResolutionInfoExtdata", MessagePackSerializer.Serialize(PartsResolveInfo));
@@ -109,8 +109,15 @@ namespace CharacterAccessory
 					{
 						if (ExtendedData.data.TryGetValue($"{_name}Extdata", out object loadedExtdata) && loadedExtdata != null)
 						{
-							if ((_name == "HairAccessoryCustomizer") || (_name == "AccStateSync"))
+							if (_name == "HairAccessoryCustomizer")
 								Traverse.Create(this).Field(_name).Method("Load", new object[] { MessagePackSerializer.Deserialize<Dictionary<int, string>>((byte[]) loadedExtdata) }).GetValue();
+							else if (_name == "AccStateSync")
+							{
+								if (ExtendedData.version < 2)
+									Traverse.Create(this).Field(_name).Method("Migrate", new object[] { MessagePackSerializer.Deserialize<Dictionary<int, string>>((byte[]) loadedExtdata) }).GetValue();
+								else
+									Traverse.Create(this).Field(_name).Method("Load", new object[] { MessagePackSerializer.Deserialize<Dictionary<string, string>>((byte[]) loadedExtdata) }).GetValue();
+							}
 							else if (_name == "MaterialEditor")
 								Traverse.Create(this).Field(_name).Method("Load", new object[] { MessagePackSerializer.Deserialize<Dictionary<string, string>>((byte[]) loadedExtdata) }).GetValue();
 							else if ((_name == "MaterialRouter") || (_name == "DynamicBoneEditor"))
@@ -182,6 +189,10 @@ namespace CharacterAccessory
 				if (ReferralIndex == 7 && PartsInfo.Count == 0)
 					go = false;
 				if (MakerAPI.InsideAndLoaded && !CfgMakerMasterSwitch.Value)
+					go = false;
+
+				CoordinateLoadFlags _loadFlags = MakerAPI.GetCoordinateLoadFlags();
+				if (MakerAPI.InsideAndLoaded && _loadFlags != null && !_loadFlags.Accessories)
 					go = false;
 
 				if (go)

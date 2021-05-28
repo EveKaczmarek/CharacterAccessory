@@ -75,7 +75,7 @@ namespace CharacterAccessory
 					return;
 				}
 				if (ReferralIndex < 7 && ReferralIndex == CurrentCoordinateIndex)
-                {
+				{
 					TaskUnlock();
 					return;
 				}

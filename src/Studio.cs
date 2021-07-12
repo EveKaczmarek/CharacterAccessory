@@ -49,6 +49,9 @@ namespace CharacterAccessory
 					{
 						CurOCIChar = null;
 						CurTreeNodeObjID = -1;
+#if DEBUG
+						MoreOutfitsSupport.BuildStudioDropdownRef();
+#endif
 					}
 					return;
 				}
@@ -64,6 +67,9 @@ namespace CharacterAccessory
 						else
 							CurOCIChar = null;
 					}
+#if DEBUG
+					MoreOutfitsSupport.BuildStudioDropdownRef();
+#endif
 				}
 			}
 
@@ -105,7 +111,7 @@ namespace CharacterAccessory
 
 				List<string> coordinateList = Enum.GetNames(typeof(ChaFileDefine.CoordinateType)).ToList();
 				coordinateList.Add("CharaAcc");
-				CurrentStateCategoryDropdown StudioDropdownRef = new CurrentStateCategoryDropdown("Referral", coordinateList.ToArray(), OCIChar => (int) GetController(OCIChar)?.ReferralIndex);
+				CurrentStateCategoryDropdown StudioDropdownRef = new CurrentStateCategoryDropdown("Referral", coordinateList.ToArray(), OCIChar => (int) GetController(OCIChar)?.GetReferralIndex());
 				StudioDropdownRef.Value.Subscribe(_value =>
 				{
 					CharacterAccessoryController _pluginCtrl = StudioAPI.GetSelectedControllers<CharacterAccessoryController>().FirstOrDefault();

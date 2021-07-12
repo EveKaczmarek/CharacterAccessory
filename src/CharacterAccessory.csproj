@@ -67,7 +67,10 @@
     <Compile Include="Hooks.cs" />
     <Compile Include="Extension.cs" />
     <Compile Include="Studio.cs" />
+    <Compile Include="Support\AAAPK.cs" />
+    <Compile Include="Support\CumOnOver.cs" />
     <Compile Include="Support\MoreAccessories.cs" />
+    <Compile Include="Support\MoreOutfits.cs" />
     <Compile Include="Support\DynamicBoneEditor.cs" />
     <Compile Include="Support\HairAccessoryCustomizer.cs" />
     <Compile Include="Support\MaterialEditor.cs" />

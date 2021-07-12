@@ -33,6 +33,7 @@ namespace CharacterAccessory
 			internal MaterialRouterSupport.UrineBag MaterialRouter;
 			internal AccStateSyncSupport.UrineBag AccStateSync;
 			internal DynamicBoneEditorSupport.UrineBag DynamicBoneEditor;
+			internal AAAPKSupport.UrineBag AAAPK;
 
 			internal Dictionary<int, ChaFileAccessory.PartsInfo> PartsInfo = new Dictionary<int, ChaFileAccessory.PartsInfo>();
 			internal Dictionary<int, ResolveInfo> PartsResolveInfo = new Dictionary<int, ResolveInfo>();
@@ -52,6 +53,7 @@ namespace CharacterAccessory
 				MaterialRouter = new MaterialRouterSupport.UrineBag(ChaControl);
 				AccStateSync = new AccStateSyncSupport.UrineBag(ChaControl);
 				DynamicBoneEditor = new DynamicBoneEditorSupport.UrineBag(ChaControl);
+				AAAPK = new AAAPKSupport.UrineBag(ChaControl);
 
 				CurrentCoordinate.Subscribe(value => { OnCoordinateChanged(); });
 				base.Start();
@@ -95,11 +97,20 @@ namespace CharacterAccessory
 				PartsResolveInfo.Clear();
 				FunctionEnable = false;
 				AutoCopyToBlank = false;
-				ReferralIndex = RefMax;
+				ReferralIndex = -1;
 				MaterialEditor.Reset();
 
 				if (ExtendedData != null)
 				{
+					if (ExtendedData.version > PluginDataVersion)
+					{
+						Logger.Log(LogLevel.Error | LogLevel.Message, $"[OnReload] ExtendedData.version: {ExtendedData.version} is newer than your plugin");
+						base.OnReload(currentGameMode);
+						return;
+					}
+					else if (ExtendedData.version < PluginDataVersion)
+						Logger.Log(LogLevel.Info, $"[OnReload] Migrating from ver. {ExtendedData.version}");
+
 					if (ExtendedData.data.TryGetValue("MoreAccessoriesExtdata", out object loadedMoreAccessoriesExtdata) && loadedMoreAccessoriesExtdata != null)
 						PartsInfo = MessagePackSerializer.Deserialize<Dictionary<int, ChaFileAccessory.PartsInfo>>((byte[]) loadedMoreAccessoriesExtdata);
 					if (ExtendedData.data.TryGetValue("ResolutionInfoExtdata", out object loadedResolutionInfoExtdata) && loadedResolutionInfoExtdata != null)
@@ -120,7 +131,7 @@ namespace CharacterAccessory
 							}
 							else if (_name == "MaterialEditor")
 								Traverse.Create(this).Field(_name).Method("Load", new object[] { MessagePackSerializer.Deserialize<Dictionary<string, string>>((byte[]) loadedExtdata) }).GetValue();
-							else if ((_name == "MaterialRouter") || (_name == "DynamicBoneEditor"))
+							else if ((_name == "MaterialRouter") || (_name == "DynamicBoneEditor") || (_name == "AAAPK"))
 								Traverse.Create(this).Field(_name).Method("Load", new object[] { MessagePackSerializer.Deserialize<List<string>>((byte[]) loadedExtdata) }).GetValue();
 						}
 					}
@@ -131,7 +142,14 @@ namespace CharacterAccessory
 						AutoCopyToBlank = (bool) loadedAutoCopyToBlank;
 					
 					if (ExtendedData.data.TryGetValue("ReferralIndex", out object loadedReferralIndex) && loadedReferralIndex != null)
-						SetReferralIndex((int) loadedReferralIndex);
+					{
+						if (ExtendedData.version < 3)
+							SetReferralIndex(-1);
+						else
+							SetReferralIndex((int) loadedReferralIndex);
+
+						DebugMsg(LogLevel.Info, $"[OnReload][{ChaControl.GetFullname()}][ReferralIndex: {ReferralIndex}]");
+					}
 					if (ExtendedData.data.TryGetValue("TextureContainer", out object loadedTextureContainer) && loadedTextureContainer != null)
 						MaterialEditor.TexContainer = MessagePackSerializer.Deserialize<Dictionary<int, byte[]>>((byte[]) loadedTextureContainer);
 
@@ -159,9 +177,16 @@ namespace CharacterAccessory
 				{
 					MakerToggleEnable.Value = FunctionEnable;
 					MakerToggleAutoCopyToBlank.Value = AutoCopyToBlank;
-					MakerDropdownRef.Value = ReferralIndex;
+#if DEBUG
+					MoreOutfitsSupport.BuildMakerDropdownRef();
+#endif
 				}
-
+#if DEBUG
+				if (CharaStudio.Running && CharaStudio.CurOCIChar?.charInfo == ChaControl)
+				{
+					MoreOutfitsSupport.BuildStudioDropdownRef();
+				}
+#endif
 				IEnumerator OnReloadCoroutine()
 				{
 					DebugMsg(LogLevel.Warning, $"[OnReloadCoroutine][{ChaControl.GetFullname()}] fired");
@@ -186,7 +211,7 @@ namespace CharacterAccessory
 
 				if (!FunctionEnable)
 					go = false;
-				if (ReferralIndex == 7 && PartsInfo.Count == 0)
+				if (ReferralIndex == -1 && PartsInfo.Count == 0)
 					go = false;
 				if (MakerAPI.InsideAndLoaded && !CfgMakerMasterSwitch.Value)
 					go = false;
@@ -273,10 +298,29 @@ namespace CharacterAccessory
 
 			internal void SetReferralIndex(int _index)
 			{
-				DebugMsg(LogLevel.Warning, $"[SetReferralIndex][{ChaControl.GetFullname()}][_index: {_index}]");
-
 				if (ReferralIndex != _index)
-					ReferralIndex = MathfEx.RangeEqualOn(0, _index, RefMax) ? _index : RefMax;
+				{
+					if (_index >= ChaControl.chaFile.coordinate.Length || _index < 0)
+						ReferralIndex = -1;
+					else
+						ReferralIndex = _index;
+				}
+
+				DebugMsg(LogLevel.Warning, $"[SetReferralIndex][{ChaControl.GetFullname()}][_index: {_index}][ReferralIndex: {ReferralIndex}]");
+			}
+
+			internal int GetReferralIndex()
+			{
+#if DEBUG
+				if (CharaStudio.Running && CharaStudio.CurOCIChar?.charInfo == ChaControl)
+				{
+					MoreOutfitsSupport.BuildStudioDropdownRef();
+				}
+#endif
+				int _index = ReferralIndex < 0 ? ChaControl.chaFile.coordinate.Length : ReferralIndex;
+				DebugMsg(LogLevel.Info, $"[GetReferralIndex][{ChaControl.GetFullname()}][_index: {_index}][ReferralIndex: {ReferralIndex}]");
+
+				return _index;
 			}
 
 			internal void FastReload(bool _noLoadStatus = true)
@@ -305,6 +349,15 @@ namespace CharacterAccessory
 				using (FileStream fileStream = new FileStream(CardPath, FileMode.Create, FileAccess.Write))
 					ChaControl.chaFile.SaveCharaFile(fileStream, true);
 				Studio.Studio.Instance.dicInfo.Values.OfType<OCIChar>().FirstOrDefault(x => x.charInfo == ChaControl).ChangeChara(CardPath);
+			}
+
+			internal string GetCordName() => GetCordName(CurrentCoordinateIndex);
+			internal string GetCordName(int CoordinateIndex)
+			{
+				if (CoordinateIndex < CordNames.Count)
+					return CordNames[CoordinateIndex];
+
+				return $"Extra {CoordinateIndex - CordNames.Count + 1}";
 			}
 		}
 	}

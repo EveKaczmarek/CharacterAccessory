@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
 using ChaCustom;
@@ -31,13 +30,15 @@ namespace CharacterAccessory
 
 			args.AddControl(new MakerText("The set to be used as a template to clone on load", category, this));
 
-			List<string> coordinateList = Enum.GetNames(typeof(ChaFileDefine.CoordinateType)).ToList();
+			List<string> coordinateList = CordNames.ToList();
 			coordinateList.Add("CharaAcc");
-			MakerDropdownRef = new MakerDropdown("Referral", coordinateList.ToArray(), category, 0, this);
+			MakerDropdownRef = new MakerDropdown("Referral", coordinateList.ToArray(), category, 7, this);
+
 			MakerDropdownRef.ValueChanged.Subscribe(value =>
 			{
 				_pluginCtrl.SetReferralIndex(value);
 			});
+
 			args.AddControl(MakerDropdownRef);
 
 			MakerToggleEnable = args.AddControl(new MakerToggle(category, "Enable", false, this));
@@ -56,6 +57,9 @@ namespace CharacterAccessory
 			{
 				if (_pluginCtrl.DuringLoading) return;
 				_pluginCtrl.Backup();
+				_pluginCtrl.SetReferralIndex(-1);
+				_pluginCtrl.FunctionEnable = true;
+				MakerToggleEnable.Value = _pluginCtrl.FunctionEnable;
 			});
 
 			args.AddControl(new MakerButton("Restore", category, this)).OnClick.AddListener(delegate
@@ -74,33 +78,10 @@ namespace CharacterAccessory
 			{
 				if (_pluginCtrl.DuringLoading) return;
 				_pluginCtrl.Reset();
-				MakerDropdownRef.Value = _pluginCtrl.ReferralIndex;
+				_pluginCtrl.SetReferralIndex(-1);
 				MakerToggleEnable.Value = _pluginCtrl.FunctionEnable;
 				MakerToggleAutoCopyToBlank.Value = _pluginCtrl.AutoCopyToBlank;
 			});
-#if DEBUG
-			args.AddControl(new MakerButton("Transfer", category, this)).OnClick.AddListener(delegate
-			{
-				if (_pluginCtrl.DuringLoading) return;
-				if (_pluginCtrl.ReferralIndex > 6)
-				{
-					Logger.LogMessage("Please choose a coordinate other than CharaAcc as referral");
-					return;
-				}
-				_pluginCtrl.TaskLock();
-				_pluginCtrl.PrepareQueue();
-			});
-
-			args.AddControl(new MakerButton("Hair info (local)", category, this)).OnClick.AddListener(delegate
-			{
-				_pluginCtrl.HairAccessoryCustomizer.DumpInfo(true);
-			});
-
-			args.AddControl(new MakerButton("Hair info", category, this)).OnClick.AddListener(delegate
-			{
-				_pluginCtrl.HairAccessoryCustomizer.DumpInfo(false);
-			});
-#endif
 		}
 	}
 }

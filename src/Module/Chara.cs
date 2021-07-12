@@ -86,7 +86,7 @@ namespace CharacterAccessory
 			{
 				FunctionEnable = false;
 				AutoCopyToBlank = false;
-				ReferralIndex = RefMax;
+				ReferralIndex = -1;
 				PartsInfo.Clear();
 				PartsResolveInfo.Clear();
 

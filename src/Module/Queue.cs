@@ -37,44 +37,44 @@ namespace CharacterAccessory
 					go = false;
 				if (!FunctionEnable)
 					go = false;
-				if (ReferralIndex == 7 && PartsInfo.Count == 0)
+				if (ReferralIndex == -1 && PartsInfo.Count == 0)
 					go = false;
-				if (ReferralIndex < 7 && ReferralIndex == CurrentCoordinateIndex)
+				if (ReferralIndex > -1 && ReferralIndex < ChaControl.chaFile.coordinate.Length && ReferralIndex == CurrentCoordinateIndex)
 					go = false;
 				if (MakerAPI.InsideAndLoaded && !CfgMakerMasterSwitch.Value)
 					go = false;
 
-				IEnumerator OnCoordinateChangedCoroutine()
-				{
-					DebugMsg(LogLevel.Warning, $"[OnCoordinateChangedCoroutine][{ChaControl.GetFullname()}] fired");
-
-					yield return new WaitForEndOfFrame();
-					yield return new WaitForEndOfFrame();
-
-					if (MoreAccessoriesSupport.ListUsedPartsInfo(ChaControl, CurrentCoordinateIndex).Count > 0)
-						yield break;
-
-					TaskLock();
-					if (ReferralIndex < 7)
-						CopyPartsInfo();
-					else
-						RestorePartsInfo();
-				}
-
 				if (go)
 					ChaControl.StartCoroutine(OnCoordinateChangedCoroutine());
+			}
+
+			internal IEnumerator OnCoordinateChangedCoroutine()
+			{
+				DebugMsg(LogLevel.Warning, $"[OnCoordinateChangedCoroutine][{ChaControl.GetFullname()}] fired");
+
+				yield return new WaitForEndOfFrame();
+				yield return new WaitForEndOfFrame();
+
+				if (MoreAccessoriesSupport.ListUsedPartsInfo(ChaControl, CurrentCoordinateIndex).Count > 0)
+					yield break;
+
+				TaskLock();
+				if (ReferralIndex > -1 && ReferralIndex < ChaControl.chaFile.coordinate.Length)
+					CopyPartsInfo();
+				else
+					RestorePartsInfo();
 			}
 
 			internal void PrepareQueue()
 			{
 				QueueList = new List<QueueItem>();
 
-				if (ReferralIndex < 0)
+				if (ReferralIndex >= ChaControl.chaFile.coordinate.Length)
 				{
 					TaskUnlock();
 					return;
 				}
-				if (ReferralIndex < 7 && ReferralIndex == CurrentCoordinateIndex)
+				if (ReferralIndex > -1 && ReferralIndex < ChaControl.chaFile.coordinate.Length && ReferralIndex == CurrentCoordinateIndex)
 				{
 					TaskUnlock();
 					return;
@@ -82,12 +82,12 @@ namespace CharacterAccessory
 
 				int RefLastNotEmpty = -1;
 
-				if (ReferralIndex < 7)
+				if (ReferralIndex > -1 && ReferralIndex < ChaControl.chaFile.coordinate.Length)
 				{
 					Dictionary<int, ChaFileAccessory.PartsInfo> RefUsedPartsInfo = MoreAccessoriesSupport.ListUsedPartsInfo(ChaControl, ReferralIndex);
 					RefLastNotEmpty = (RefUsedPartsInfo.Count == 0) ? -1 : RefUsedPartsInfo.Keys.Max();
 				}
-				else
+				else if (ReferralIndex  == -1)
 					RefLastNotEmpty = (PartsInfo.Count == 0) ? -1 : PartsInfo.Keys.Max();
 
 				DebugMsg(LogLevel.Warning, $"[PrepareQueue][{ChaControl.GetFullname()}][ReferralIndex: {ReferralIndex}][SrcLastNotEmpty: Slot{RefLastNotEmpty + 1:00}]");
@@ -101,9 +101,9 @@ namespace CharacterAccessory
 				Dictionary<int, ChaFileAccessory.PartsInfo> CurUsedPartsInfo = MoreAccessoriesSupport.ListUsedPartsInfo(ChaControl, CurrentCoordinateIndex);
 				if (CurUsedPartsInfo.Count == 0)
 				{
-					if (ReferralIndex < 7)
+					if (ReferralIndex > -1 && ReferralIndex < ChaControl.chaFile.coordinate.Length)
 						CopyPartsInfo();
-					else
+					else if (ReferralIndex == -1)
 						RestorePartsInfo();
 					return;
 				}
@@ -143,9 +143,9 @@ namespace CharacterAccessory
 						TransferPartsInfo();
 					else
 					{
-						if (ReferralIndex < 7)
+						if (ReferralIndex > -1 && ReferralIndex < ChaControl.chaFile.coordinate.Length)
 							CopyPartsInfo();
-						else
+						else if (ReferralIndex == -1)
 						{
 							ChaControl.ChangeCoordinateTypeAndReload(false);
 							ChaControl.StartCoroutine(RestorePartsInfoCoroutine());

@@ -51,9 +51,9 @@ namespace CharacterAccessory
 					}
 				}
 
-				if (ReferralIndex < 7)
+				if (ReferralIndex > -1 && ReferralIndex < ChaControl.chaFile.coordinate.Length)
 					CopyPartsInfo();
-				else
+				else if (ReferralIndex == -1)
 				{
 					ChaControl.ChangeCoordinateTypeAndReload(false);
 					ChaControl.StartCoroutine(RestorePartsInfoCoroutine());

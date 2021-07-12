@@ -64,9 +64,15 @@ namespace CharacterAccessory
 
 					foreach (string _key in _containerKeys)
 					{
+						/*
 						_extdataLink[_key] = Traverse.Create(_pluginCtrl).Field(_key).GetValue();
 						_charaAccData[_key] = _extdataLink[_key].JsonClone();
 						Traverse.Create(_charaAccData[_key]).Method("Clear").GetValue();
+						*/
+						string _name = "KK_Plugins.MaterialEditor.MaterialEditorCharaController+" + _key.Replace("List", "");
+						Type _type = _instance.GetType().Assembly.GetType(_name);
+						Type _generic = typeof(List<>).MakeGenericType(_type);
+						_charaAccData[_key] = Activator.CreateInstance(_generic);
 					}
 				}
 
@@ -203,6 +209,26 @@ namespace CharacterAccessory
 
 				internal void RemovePartsInfo(int _slotIndex)
 				{
+					/*
+					GameObject _gameObject = _chaCtrl.GetAccessoryObject(_slotIndex);
+					if (_gameObject != null)
+					{
+						Renderer[] _renderers = _gameObject.GetComponentsInChildren<Renderer>();
+						foreach (Renderer _renderer in _renderers)
+						{
+							foreach (Material _material in _renderer.materials)
+							{
+								PropertyInfo[] _infos = _material.GetType().GetProperties();
+								foreach (PropertyInfo _info in _infos)
+								{
+									var _property = _info.GetValue(_material, null);
+									if (_property != null && _property.GetType() == typeof(Texture2D))
+										Destroy((Texture2D) _property);
+								}
+							}
+						}
+					}
+					*/
 					Traverse.Create(_pluginCtrl).Method("AccessoryKindChangeEvent", new object[] { null, new AccessorySlotEventArgs(_slotIndex) }).GetValue();
 				}
 

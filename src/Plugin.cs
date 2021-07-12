@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 #if DEBUG
 using System.Reflection;
 using System.Text;
@@ -18,7 +19,7 @@ using KKAPI.Utilities;
 
 namespace CharacterAccessory
 {
-	[BepInPlugin(GUID, PluginName, Version)]
+	[BepInPlugin(GUID, Name, Version)]
 	[BepInDependency("marco.kkapi", "1.17")]
 	[BepInDependency("com.deathweasel.bepinex.materialeditor", "3.0")]
 	[BepInDependency("com.joan6694.illusionplugins.moreaccessories", "1.0.9")]
@@ -26,11 +27,11 @@ namespace CharacterAccessory
 	{
 		public const string GUID = "madevil.kk.ca";
 #if DEBUG
-		public const string PluginName = "Character Accessory (Debug Build)";
+		public const string Name = "Character Accessory (Debug Build)";
 #else
-		public const string PluginName = "Character Accessory";
+		public const string Name = "Character Accessory";
 #endif
-		public const string Version = "1.2.0.0";
+		public const string Version = "1.3.0.0";
 
 		internal static new ManualLogSource Logger;
 		internal static CharacterAccessory Instance;
@@ -41,9 +42,9 @@ namespace CharacterAccessory
 		internal static ConfigEntry<bool> CfgStudioFallbackReload { get; set; }
 		internal static ConfigEntry<bool> CfgMAHookUpdateStudioUI { get; set; }
 
-		internal const int RefMax = 7;
-		internal const int PluginDataVersion = 2;
+		internal const int PluginDataVersion = 3;
 		internal static List<string> SupportList = new List<string>();
+		internal static List<string> CordNames = new List<string>();
 
 		private void Awake()
 		{
@@ -61,15 +62,21 @@ namespace CharacterAccessory
 
 		private void Start()
 		{
+			CordNames = Enum.GetNames(typeof(ChaFileDefine.CoordinateType)).ToList();
 			CharacterApi.RegisterExtraBehaviour<CharacterAccessoryController>(GUID);
 			HooksInstance["General"] = Harmony.CreateAndPatchAll(typeof(Hooks));
 
 			MoreAccessoriesSupport.Init();
+#if DEBUG
+			MoreOutfitsSupport.Init();
+#endif
 			HairAccessoryCustomizerSupport.Init();
 			MaterialEditorSupport.Init();
 			MaterialRouterSupport.Init();
 			AccStateSyncSupport.Init();
 			DynamicBoneEditorSupport.Init();
+			AAAPKSupport.Init();
+			CumOnOverSupport.Init();
 
 			if (CharaStudio.Running)
 			{
@@ -81,7 +88,9 @@ namespace CharacterAccessory
 				MakerAPI.MakerBaseLoaded += (object sender, RegisterCustomControlsEvent ev) =>
 				{
 					HooksInstance["Maker"] = Harmony.CreateAndPatchAll(typeof(HooksMaker));
-
+#if DEBUG
+					MoreOutfitsSupport.MakerInit();
+#endif
 					{
 						BepInEx.Bootstrap.Chainloader.PluginInfos.TryGetValue("ClothingStateMenu", out PluginInfo _pluginInfo);
 						if (_pluginInfo?.Instance != null)
@@ -94,6 +103,9 @@ namespace CharacterAccessory
 					HooksInstance["Maker"].UnpatchAll(HooksInstance["Maker"].Id);
 					HooksInstance["Maker"] = null;
 
+					MakerDropdownRef = null;
+					MakerToggleEnable = null;
+					MakerToggleAutoCopyToBlank = null;
 					SidebarToggleEnable = null;
 				};
 

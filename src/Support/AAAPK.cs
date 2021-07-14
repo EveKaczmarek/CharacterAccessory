@@ -35,8 +35,8 @@ namespace CharacterAccessory
 					SupportList.Add("AAAPK");
 
 					Assembly _assembly = _instance.GetType().Assembly;
-					_types["AAAPKController"] = _assembly.GetType("AAAPK.AAAPK.AAAPKController");
-					_types["ParentRule"] = _assembly.GetType("AAAPK.AAAPK.ParentRule");
+					_types["AAAPKController"] = _assembly.GetType("AAAPK.AAAPK+AAAPKController");
+					_types["ParentRule"] = _assembly.GetType("AAAPK.AAAPK+ParentRule");
 				}
 			}
 

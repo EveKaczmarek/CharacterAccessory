@@ -1,4 +1,6 @@
-﻿using Studio;
+﻿using System.Collections;
+
+using Studio;
 
 using BepInEx.Logging;
 using HarmonyLib;
@@ -24,6 +26,27 @@ namespace CharacterAccessory
 				}
 				return true;
 			}
+
+			internal static bool DuringLoading_IEnumerator_Prefix(CharaCustomFunctionController __instance, ref IEnumerator __result)
+			{
+				ChaControl _chaCtrl = __instance.ChaControl;
+				CharacterAccessoryController _pluginCtrl = GetController(_chaCtrl);
+				if (_pluginCtrl.DuringLoading)
+				{
+#if DEBUG
+					DebugMsg(LogLevel.Warning, $"[DuringLoading_Prefix][{_chaCtrl.GetFullname()}] await loading");
+#endif
+					IEnumerator original = __result;
+					__result = new[] { original, YieldBreak() }.GetEnumerator();
+
+
+
+					return false;
+				}
+				return true;
+
+				IEnumerator YieldBreak() { yield break; }
+			}
 		}
 
 		internal class HooksMaker
@@ -47,20 +70,20 @@ namespace CharacterAccessory
 
 		internal class HooksStudio
 		{
-			[HarmonyPostfix, HarmonyPatch(typeof(TreeNodeCtrl), nameof(TreeNodeCtrl.SelectSingle))]
-			private static void TreeNodeCtrl_SelectSingle_Postfix(TreeNodeCtrl __instance, TreeNodeObject _node, bool _deselect)
+			[HarmonyPostfix, HarmonyPatch(typeof(TreeNodeCtrl), nameof(TreeNodeCtrl.SelectSingle), new[] { typeof(TreeNodeObject), typeof(bool) })]
+			private static void TreeNodeCtrl_SelectSingle_Postfix(TreeNodeObject _node)
 			{
 				CharaStudio.GetTreeNodeInfo(_node);
 			}
 
-			[HarmonyPostfix, HarmonyPatch(typeof(TreeNodeCtrl), nameof(TreeNodeCtrl.SelectMultiple))]
-			private static void TreeNodeCtrl_SelectMultiple_Postfix(TreeNodeCtrl __instance, TreeNodeObject _start, TreeNodeObject _end)
+			[HarmonyPostfix, HarmonyPatch(typeof(TreeNodeCtrl), nameof(TreeNodeCtrl.SelectMultiple), new[] { typeof(TreeNodeObject), typeof(TreeNodeObject) })]
+			private static void TreeNodeCtrl_SelectMultiple_Postfix(TreeNodeObject _start)
 			{
 				CharaStudio.GetTreeNodeInfo(_start);
 			}
 
-			[HarmonyPrefix, HarmonyPatch(typeof(Studio.Studio), nameof(Studio.Studio.InitScene))]
-			private static void Studio_InitScene_Prefix(bool _close)
+			[HarmonyPrefix, HarmonyPatch(typeof(Studio.Studio), nameof(Studio.Studio.InitScene), new[] { typeof(bool) })]
+			private static void Studio_InitScene_Prefix()
 			{
 				CharaStudio.GetTreeNodeInfo(null);
 			}

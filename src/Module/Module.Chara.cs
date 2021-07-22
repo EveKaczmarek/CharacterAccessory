@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 
-using UnityEngine;
 using UniRx;
 using MessagePack;
 
@@ -76,8 +75,8 @@ namespace CharacterAccessory
 			{
 				DebugMsg(LogLevel.Warning, $"[RestoreCoroutine][{ChaControl.GetFullname()}] fired");
 
-				yield return new WaitForEndOfFrame();
-				yield return new WaitForEndOfFrame();
+				yield return JetPack.Toolbox.WaitForEndOfFrame;
+				yield return JetPack.Toolbox.WaitForEndOfFrame;
 
 				RestorePartsInfo();
 			}
@@ -130,7 +129,7 @@ namespace CharacterAccessory
 				if (CharaStudio.Running)
 				{
 					ChaControl.ChangeCoordinateTypeAndReload(false);
-					ChaControl.StartCoroutine(RestorePluginSettingCoroutine());
+					StartCoroutine(RestorePluginSettingCoroutine());
 					return;
 				}
 				else
@@ -138,7 +137,7 @@ namespace CharacterAccessory
 					foreach (string _name in SupportList)
 						Traverse.Create(this).Field(_name).Method("Restore").GetValue();
 
-					ChaControl.StartCoroutine(RefreshCoroutine());
+					StartCoroutine(RefreshCoroutine());
 				}
 			}
 
@@ -146,8 +145,8 @@ namespace CharacterAccessory
 			{
 				DebugMsg(LogLevel.Warning, $"[RestorePluginSettingCoroutine][{ChaControl.GetFullname()}] fired");
 
-				yield return new WaitForEndOfFrame();
-				yield return new WaitForEndOfFrame();
+				yield return JetPack.Toolbox.WaitForEndOfFrame;
+				yield return JetPack.Toolbox.WaitForEndOfFrame;
 
 				RestorePluginSetting();
 			}
@@ -159,7 +158,7 @@ namespace CharacterAccessory
 				foreach (string _name in SupportList)
 					Traverse.Create(this).Field(_name).Method("Restore").GetValue();
 
-				ChaControl.StartCoroutine(RefreshCoroutine());
+				StartCoroutine(RefreshCoroutine());
 			}
 		}
 	}

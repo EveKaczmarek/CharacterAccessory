@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,40 +13,51 @@ using HarmonyLib;
 
 using KKAPI.Chara;
 using KKAPI.Maker;
+using JetPack;
 
 namespace CharacterAccessory
 {
 	public partial class CharacterAccessory
 	{
-		internal static class DynamicBoneEditorSupport
+		internal static class AAAPKSupport
 		{
-			private static BaseUnityPlugin _instance = null;
-			private static bool _installed = false;
-			private static Dictionary<string, Type> _types = new Dictionary<string, Type>();
+			internal static BaseUnityPlugin _instance = null;
+			internal static bool _installed = false;
+			internal static bool _legacy = false;
+			internal static readonly Dictionary<string, Type> _types = new Dictionary<string, Type>();
 
 			internal static void Init()
 			{
-				BepInEx.Bootstrap.Chainloader.PluginInfos.TryGetValue("com.deathweasel.bepinex.dynamicboneeditor", out PluginInfo _pluginInfo);
+				BepInEx.Bootstrap.Chainloader.PluginInfos.TryGetValue("madevil.kk.AAAPK", out PluginInfo _pluginInfo);
 				_instance = _pluginInfo?.Instance;
 
 				if (_instance != null)
 				{
+					_legacy = _pluginInfo.Metadata.Version.CompareTo(new Version("1.1.0.0")) < 0;
+					if (_legacy)
+					{
+						Logger.LogError($"AAAPK version {_pluginInfo.Metadata.Version} found, minimun version 1.1 is reqired");
+						return;
+					}
+
 					_installed = true;
-					SupportList.Add("DynamicBoneEditor");
+					SupportList.Add("AAAPK");
 
 					Assembly _assembly = _instance.GetType().Assembly;
-					_types["CharaController"] = _assembly.GetType("KK_Plugins.DynamicBoneEditor.CharaController");
-					_types["DynamicBoneData"] = _assembly.GetType("KK_Plugins.DynamicBoneEditor.DynamicBoneData");
+					_types["AAAPKController"] = _assembly.GetType("AAAPK.AAAPK+AAAPKController");
+					_types["ParentRule"] = _assembly.GetType("AAAPK.AAAPK+ParentRule");
+
+					HooksInstance["General"].Patch(_types["AAAPKController"].GetMethod("ApplyParentRuleList", AccessTools.all, null, new[] { typeof(string) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
 				}
 			}
 
-			internal static CharaCustomFunctionController GetController(ChaControl _chaCtrl) => Traverse.Create(_instance).Method("GetCharaController", new object[] { _chaCtrl }).GetValue<CharaCustomFunctionController>();
+			internal static CharaCustomFunctionController GetController(ChaControl _chaCtrl) => Traverse.Create(_instance).Method("GetController", new object[] { _chaCtrl }).GetValue<CharaCustomFunctionController>();
 
 			internal class UrineBag
 			{
 				private readonly ChaControl _chaCtrl;
 				private readonly CharaCustomFunctionController _pluginCtrl;
-				private List<object> _charaAccData = new List<object>();
+				private readonly List<object> _charaAccData = new List<object>();
 
 				internal UrineBag(ChaControl ChaControl)
 				{
@@ -58,7 +69,7 @@ namespace CharacterAccessory
 
 				internal object GetExtDataLink()
 				{
-					return Traverse.Create(_pluginCtrl).Field("AccessoryDynamicBoneData").GetValue();
+					return Traverse.Create(_pluginCtrl).Field("ParentRuleList").GetValue();
 				}
 
 				internal void Reset()
@@ -72,9 +83,9 @@ namespace CharacterAccessory
 					if (!_installed) return null;
 					List<string> _json = new List<string>();
 					foreach (object x in _charaAccData)
-						_json.Add(JSONSerializer.Serialize(_types["DynamicBoneData"], x));
+						_json.Add(JSONSerializer.Serialize(_types["ParentRule"], x));
 #if DEBUG
-					DebugMsg(LogLevel.Debug, $"[DynamicBoneEditor][Save][{_chaCtrl.GetFullname()}]\n{JSONSerializer.Serialize(_json.GetType(), _json, true)}");
+					DebugMsg(LogLevel.Debug, $"[AAAPK][Save][{_chaCtrl.GetFullname()}]\n{JSONSerializer.Serialize(_types["ParentRule"], _json, true)}");
 #endif
 					return _json;
 				}
@@ -86,9 +97,9 @@ namespace CharacterAccessory
 					if (_json == null) return;
 
 					foreach (string x in _json)
-						_charaAccData.Add(JSONSerializer.Deserialize(_types["DynamicBoneData"], x));
+						_charaAccData.Add(JSONSerializer.Deserialize(_types["ParentRule"], x));
 #if DEBUG
-					DebugMsg(LogLevel.Debug, $"[DynamicBoneEditor][Load][{_chaCtrl.GetFullname()}]\n{JSONSerializer.Serialize(_json.GetType(), _json, true)}");
+					DebugMsg(LogLevel.Debug, $"[AAAPK][Load][{_chaCtrl.GetFullname()}]\n{JSONSerializer.Serialize(_types["ParentRule"], _json, true)}");
 #endif
 				}
 
@@ -108,17 +119,17 @@ namespace CharacterAccessory
 					for (int i = 0; i < n; i++)
 					{
 						object x = _extdataLink.RefElementAt(i).JsonClone(); // should I null cheack this?
+						Traverse _traverse = Traverse.Create(x);
+						if (_traverse.Property("Coordinate").GetValue<int>() != _coordinateIndex) continue;
+						if (!_slots.Contains(_traverse.Property("Slot").GetValue<int>())) continue;
 
-						if (Traverse.Create(x).Field("CoordinateIndex").GetValue<int>() != _coordinateIndex) continue;
-						if (_slots.IndexOf(Traverse.Create(x).Field("Slot").GetValue<int>()) < 0) continue;
-
-						Traverse.Create(x).Field("CoordinateIndex").SetValue(-1);
+						_traverse.Property("Coordinate").SetValue(-1);
 						Traverse.Create(_charaAccData).Method("Add", new object[] { x }).GetValue();
 #if DEBUG
-						DebugMsg(LogLevel.Warning, $"[DynamicBoneEditor][Backup][Slot: {_chaCtrl.GetFullname()}][{Traverse.Create(x).Field("Slot").GetValue<int>()}]");
+						DebugMsg(LogLevel.Warning, $"[AAAPK][Backup][Slot: {_chaCtrl.GetFullname()}][{_traverse.Property("Slot").GetValue<int>()}]");
 #endif
 					}
-					DebugMsg(LogLevel.Warning, $"[DynamicBoneEditor][Backup][Count: {_chaCtrl.GetFullname()}][{_charaAccData.Count}]");
+					DebugMsg(LogLevel.Warning, $"[AAAPK][Backup][Count: {_chaCtrl.GetFullname()}][{_charaAccData.Count}]");
 				}
 
 				internal void Restore()
@@ -132,7 +143,7 @@ namespace CharacterAccessory
 					for (int i = 0; i < _charaAccData.Count; i++)
 					{
 						object x = _charaAccData[i].JsonClone();
-						Traverse.Create(x).Field("CoordinateIndex").SetValue(_coordinateIndex);
+						Traverse.Create(x).Property("Coordinate").SetValue(_coordinateIndex);
 						Traverse.Create(_extdataLink).Method("Add", new object[] { x }).GetValue();
 					}
 				}
@@ -140,37 +151,22 @@ namespace CharacterAccessory
 				internal void CopyPartsInfo(AccessoryCopyEventArgs ev)
 				{
 					if (!_installed) return;
-					Traverse.Create(_pluginCtrl).Method("AccessoriesCopiedEvent", new object[] { null, ev }).GetValue();
+					foreach (int _slotIndex in ev.CopiedSlotIndexes)
+						Traverse.Create(_pluginCtrl).Method("CloneRule", new object[] { _slotIndex, _slotIndex, (int) ev.CopySource, (int) ev.CopyDestination }).GetValue();
+					return;
 				}
 
 				internal void TransferPartsInfo(AccessoryTransferEventArgs ev)
 				{
 					if (!_installed) return;
-
-					object _extdataLink = GetExtDataLink();
-					if (_extdataLink == null) return;
-
-					RemovePartsInfo(ev.DestinationSlotIndex);
-
 					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
-
-					int n = (_extdataLink as IList).Count;
-					for (int i = 0; i < n; i++)
-					{
-						object x = _extdataLink.RefElementAt(i).JsonClone();
-
-						if (Traverse.Create(x).Field("CoordinateIndex").GetValue<int>() != _coordinateIndex) continue;
-						if (Traverse.Create(x).Field("Slot").GetValue<int>() != ev.SourceSlotIndex) continue;
-
-						Traverse.Create(x).Field("Slot").SetValue(ev.DestinationSlotIndex);
-						Traverse.Create(_extdataLink).Method("Add", new object[] { x }).GetValue();
-					}
+					Traverse.Create(_pluginCtrl).Method("MoveRule", new object[] { ev.SourceSlotIndex, ev.DestinationSlotIndex, _coordinateIndex }).GetValue();
 				}
 
 				internal void RemovePartsInfo(int _slotIndex)
 				{
 					if (!_installed) return;
-					Traverse.Create(_pluginCtrl).Method("AccessoryKindChangeEvent", new object[] { null, new AccessorySlotEventArgs(_slotIndex) }).GetValue();
+					Traverse.Create(_pluginCtrl).Method("RemoveRule", new object[] { _slotIndex }).GetValue();
 				}
 			}
 		}

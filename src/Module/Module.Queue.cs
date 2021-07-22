@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 
-using UnityEngine;
 using UniRx;
 
 using BepInEx.Logging;
@@ -52,8 +51,8 @@ namespace CharacterAccessory
 			{
 				DebugMsg(LogLevel.Warning, $"[OnCoordinateChangedCoroutine][{ChaControl.GetFullname()}] fired");
 
-				yield return new WaitForEndOfFrame();
-				yield return new WaitForEndOfFrame();
+				yield return JetPack.Toolbox.WaitForEndOfFrame;
+				yield return JetPack.Toolbox.WaitForEndOfFrame;
 
 				if (MoreAccessoriesSupport.ListUsedPartsInfo(ChaControl, CurrentCoordinateIndex).Count > 0)
 					yield break;
@@ -135,7 +134,7 @@ namespace CharacterAccessory
 				if (ToAdd > 0)
 				{
 					MoreAccessoriesSupport.CheckAndPadPartInfo(ChaControl, CurrentCoordinateIndex, CurLastNotEmpty + shift);
-					ChaControl.StartCoroutine(TransferPartsInfoCoroutine());
+					StartCoroutine(TransferPartsInfoCoroutine());
 				}
 				else
 				{
@@ -148,7 +147,7 @@ namespace CharacterAccessory
 						else if (ReferralIndex == -1)
 						{
 							ChaControl.ChangeCoordinateTypeAndReload(false);
-							ChaControl.StartCoroutine(RestorePartsInfoCoroutine());
+							StartCoroutine(RestorePartsInfoCoroutine());
 						}
 					}
 				}
@@ -156,12 +155,12 @@ namespace CharacterAccessory
 
 			internal class QueueItem
 			{
-				public int srcSlot { get; set; }
-				public int dstSlot { get; set; }
+				public int SrcSlot { get; set; }
+				public int DstSlot { get; set; }
 				public QueueItem(int _src, int _dst)
 				{
-					srcSlot = _src;
-					dstSlot = _dst;
+					SrcSlot = _src;
+					DstSlot = _dst;
 				}
 			}
 		}

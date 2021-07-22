@@ -1,11 +1,9 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 
 using ChaCustom;
-using UnityEngine;
 using UniRx;
 using MessagePack;
 using Studio;
@@ -18,13 +16,14 @@ using Sideloader.AutoResolver;
 using KKAPI;
 using KKAPI.Chara;
 using KKAPI.Maker;
+using JetPack;
 
 namespace CharacterAccessory
 {
 	public partial class CharacterAccessory
 	{
 		public static CharacterAccessoryController GetController(ChaControl ChaControl) => ChaControl?.gameObject?.GetComponent<CharacterAccessoryController>();
-		public static CharacterAccessoryController GetController(OCIChar OCIChar) => OCIChar?.charInfo?.gameObject?.GetComponent<CharacterAccessoryController>();
+		public static CharacterAccessoryController GetController(OCIChar OCIChar) => GetController(OCIChar?.charInfo);
 
 		public partial class CharacterAccessoryController : CharaCustomFunctionController
 		{
@@ -191,8 +190,8 @@ namespace CharacterAccessory
 				{
 					DebugMsg(LogLevel.Warning, $"[OnReloadCoroutine][{ChaControl.GetFullname()}] fired");
 
-					yield return new WaitForEndOfFrame();
-					yield return new WaitForEndOfFrame();
+					yield return JetPack.Toolbox.WaitForEndOfFrame;
+					yield return JetPack.Toolbox.WaitForEndOfFrame;
 
 					AutoCopyCheck();
 				}
@@ -237,8 +236,8 @@ namespace CharacterAccessory
 			{
 				DebugMsg(LogLevel.Warning, $"[OnCoordinateBeingLoadedCoroutine][{ChaControl.GetFullname()}] fired");
 
-				yield return new WaitForEndOfFrame();
-				yield return new WaitForEndOfFrame();
+				yield return JetPack.Toolbox.WaitForEndOfFrame;
+				yield return JetPack.Toolbox.WaitForEndOfFrame;
 
 				TaskLock();
 				PrepareQueue();
@@ -248,8 +247,8 @@ namespace CharacterAccessory
 			{
 				DebugMsg(LogLevel.Warning, $"[RefreshCoroutine][{ChaControl.GetFullname()}] fired");
 
-				yield return new WaitForEndOfFrame();
-				yield return new WaitForEndOfFrame();
+				yield return JetPack.Toolbox.WaitForEndOfFrame;
+				yield return JetPack.Toolbox.WaitForEndOfFrame;
 
 				TaskUnlock();
 
@@ -258,7 +257,10 @@ namespace CharacterAccessory
 					if (CfgStudioFallbackReload.Value)
 						BigReload();
 					else
+					{
 						FastReload();
+						ChaControl.ChangeCoordinateTypeAndReload(false);
+					}
 				}
 				else
 				{
@@ -267,28 +269,28 @@ namespace CharacterAccessory
 					if (MakerAPI.InsideAndLoaded)
 						CustomBase.Instance.updateCustomUI = true;
 				}
-				ChaControl.StartCoroutine(PreviewCoroutine());
+				//StartCoroutine(PreviewCoroutine());
 			}
 
 			internal IEnumerator PreviewCoroutine()
 			{
 				DebugMsg(LogLevel.Warning, $"[PreviewCoroutine][{ChaControl.GetFullname()}] fired");
 
-				yield return new WaitForEndOfFrame();
-				yield return new WaitForEndOfFrame();
+				yield return JetPack.Toolbox.WaitForEndOfFrame;
+				yield return JetPack.Toolbox.WaitForEndOfFrame;
 
 				AccStateSync.InitCurOutfitTriggerInfo("OnCoordinateBeingLoaded");
 
 				if (CharaStudio.Loaded)
-					ChaControl.StartCoroutine(RefreshCharaStatePanelCoroutine());
+					StartCoroutine(RefreshCharaStatePanelCoroutine());
 			}
 
 			internal IEnumerator RefreshCharaStatePanelCoroutine()
 			{
 				DebugMsg(LogLevel.Warning, $"[RefreshCharaStatePanelCoroutine][{ChaControl.GetFullname()}] fired");
 
-				yield return new WaitForEndOfFrame();
-				yield return new WaitForEndOfFrame();
+				yield return JetPack.Toolbox.WaitForEndOfFrame;
+				yield return JetPack.Toolbox.WaitForEndOfFrame;
 
 				HairAccessoryCustomizer.UpdateAccessories(false);
 				//AccStateSync.SyncAllAccToggle();

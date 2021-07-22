@@ -12,6 +12,7 @@ using HarmonyLib;
 
 using KKAPI.Chara;
 using KKAPI.Maker;
+using JetPack;
 
 namespace CharacterAccessory
 {
@@ -19,14 +20,13 @@ namespace CharacterAccessory
 	{
 		internal static class HairAccessoryCustomizerSupport
 		{
-			private static BaseUnityPlugin _instance = null;
-			private static bool _installed = false;
-			private static Dictionary<string, Type> _types = new Dictionary<string, Type>();
+			internal static BaseUnityPlugin _instance = null;
+			internal static bool _installed = false;
+			internal static readonly Dictionary<string, Type> _types = new Dictionary<string, Type>();
 
 			internal static void Init()
 			{
-				BepInEx.Bootstrap.Chainloader.PluginInfos.TryGetValue("com.deathweasel.bepinex.hairaccessorycustomizer", out PluginInfo _pluginInfo);
-				_instance = _pluginInfo?.Instance;
+				_instance = JetPack.Toolbox.GetPluginInstance("com.deathweasel.bepinex.hairaccessorycustomizer");
 
 				if (_instance != null)
 				{
@@ -51,7 +51,7 @@ namespace CharacterAccessory
 			{
 				private readonly ChaControl _chaCtrl;
 				private readonly CharaCustomFunctionController _pluginCtrl;
-				private Dictionary<int, object> _charaAccData = new Dictionary<int, object>();
+				private readonly Dictionary<int, object> _charaAccData = new Dictionary<int, object>();
 
 				internal UrineBag(ChaControl ChaControl)
 				{

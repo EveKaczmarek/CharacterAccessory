@@ -12,6 +12,7 @@ using HarmonyLib;
 
 using KKAPI.Chara;
 using KKAPI.Maker;
+using JetPack;
 
 namespace CharacterAccessory
 {
@@ -19,14 +20,13 @@ namespace CharacterAccessory
 	{
 		internal static class MaterialRouterSupport
 		{
-			private static BaseUnityPlugin _instance = null;
-			private static bool _installed = false;
-			private static Dictionary<string, Type> _types = new Dictionary<string, Type>();
+			internal static BaseUnityPlugin _instance = null;
+			internal static bool _installed = false;
+			internal static readonly Dictionary<string, Type> _types = new Dictionary<string, Type>();
 
 			internal static void Init()
 			{
-				BepInEx.Bootstrap.Chainloader.PluginInfos.TryGetValue("madevil.kk.mr", out PluginInfo _pluginInfo);
-				_instance = _pluginInfo?.Instance;
+				_instance = JetPack.Toolbox.GetPluginInstance("madevil.kk.mr");
 
 				if (_instance != null)
 				{
@@ -52,7 +52,7 @@ namespace CharacterAccessory
 				private readonly ChaControl _chaCtrl;
 				private readonly CharaCustomFunctionController _pluginCtrl;
 				//private object OutfitTriggers;
-				private List<object> _charaAccData = new List<object>();
+				private readonly List<object> _charaAccData = new List<object>();
 
 				internal UrineBag(ChaControl ChaControl)
 				{

@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-#if DEBUG
-using System.Reflection;
-using System.Text;
-#endif
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -20,9 +16,10 @@ using KKAPI.Utilities;
 namespace CharacterAccessory
 {
 	[BepInPlugin(GUID, Name, Version)]
+	[BepInDependency("madevil.JetPack", JetPack.Core.Version)]
 	[BepInDependency("marco.kkapi", "1.17")]
 	[BepInDependency("com.deathweasel.bepinex.materialeditor", "3.0")]
-	[BepInDependency("com.joan6694.illusionplugins.moreaccessories", "1.0.9")]
+	[BepInDependency("com.joan6694.illusionplugins.moreaccessories", "1.1.0")]
 	public partial class CharacterAccessory : BaseUnityPlugin
 	{
 		public const string GUID = "madevil.kk.ca";
@@ -31,7 +28,7 @@ namespace CharacterAccessory
 #else
 		public const string Name = "Character Accessory";
 #endif
-		public const string Version = "1.3.1.0";
+		public const string Version = "1.4.0.0";
 
 		internal static new ManualLogSource Logger;
 		internal static CharacterAccessory Instance;
@@ -76,7 +73,9 @@ namespace CharacterAccessory
 			AccStateSyncSupport.Init();
 			DynamicBoneEditorSupport.Init();
 			AAAPKSupport.Init();
+
 			CumOnOverSupport.Init();
+			BonerStateSync.Init();
 
 			if (CharaStudio.Running)
 			{
@@ -92,9 +91,9 @@ namespace CharacterAccessory
 					MoreOutfitsSupport.MakerInit();
 #endif
 					{
-						BepInEx.Bootstrap.Chainloader.PluginInfos.TryGetValue("ClothingStateMenu", out PluginInfo _pluginInfo);
-						if (_pluginInfo?.Instance != null)
-							HooksInstance["Maker"].Patch(_pluginInfo.Instance.GetType().GetMethod("OnGUI", AccessTools.all), prefix: new HarmonyMethod(typeof(HooksMaker), nameof(HooksMaker.DuringLoading_Prefix)));
+						BaseUnityPlugin _instance = JetPack.Toolbox.GetPluginInstance("ClothingStateMenu");
+						if (_instance != null)
+							HooksInstance["Maker"].Patch(_instance.GetType().GetMethod("OnGUI", AccessTools.all), prefix: new HarmonyMethod(typeof(HooksMaker), nameof(HooksMaker.DuringLoading_Prefix)));
 					}
 				};
 
@@ -123,39 +122,7 @@ namespace CharacterAccessory
 #if DEBUG
 		internal static string DisplayObjectInfo(object o)
 		{
-			StringBuilder sb = new StringBuilder();
-
-			// Include the type of the object
-			Type type = o.GetType();
-			sb.Append("Type: " + type.Name);
-
-			// Include information for each Field
-			sb.Append("\r\n\r\nFields:");
-			FieldInfo[] fi = type.GetFields();
-			if (fi.Length > 0)
-			{
-				foreach (FieldInfo f in fi)
-				{
-					sb.Append("\r\n " + f.ToString() + " = " + f.GetValue(o));
-				}
-			}
-			else
-				sb.Append("\r\n None");
-
-			// Include information for each Property
-			sb.Append("\r\n\r\nProperties:");
-			PropertyInfo[] pi = type.GetProperties();
-			if (pi.Length > 0)
-			{
-				foreach (PropertyInfo p in pi)
-				{
-					sb.Append("\r\n " + p.ToString() + " = " + p.GetValue(o, null));
-				}
-			}
-			else
-				sb.Append("\r\n None");
-
-			return sb.ToString();
+			return JetPack.Toolbox.DisplayObjectInfo(o);
 		}
 #endif
 	}

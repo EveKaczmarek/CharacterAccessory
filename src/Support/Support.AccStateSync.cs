@@ -4,15 +4,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-using UnityEngine;
 using ParadoxNotion.Serialization;
 
 using BepInEx;
-using BepInEx.Logging;
 using HarmonyLib;
 
 using KKAPI.Chara;
 using KKAPI.Maker;
+using JetPack;
 
 namespace CharacterAccessory
 {
@@ -20,14 +19,13 @@ namespace CharacterAccessory
 	{
 		internal static class AccStateSyncSupport
 		{
-			private static BaseUnityPlugin _instance = null;
-			private static bool _installed = false;
-			private static bool _legacy = false;
-			private static Dictionary<string, Type> _types = new Dictionary<string, Type>();
-			private static Dictionary<string, MethodInfo> _methods = new Dictionary<string, MethodInfo>();
-			private static readonly List<string> _containerKeys = new List<string>() { "TriggerPropertyList", "TriggerGroupList" };
-			private static Dictionary<string, string> _accParentNames = new Dictionary<string, string>();
-			private static Dictionary<string, int> _guidMapping = new Dictionary<string, int>();
+			internal static BaseUnityPlugin _instance = null;
+			internal static bool _installed = false;
+			internal static bool _legacy = false;
+			internal static readonly Dictionary<string, Type> _types = new Dictionary<string, Type>();
+			internal static readonly List<string> _containerKeys = new List<string>() { "TriggerPropertyList", "TriggerGroupList" };
+			internal static readonly Dictionary<string, string> _accParentNames = new Dictionary<string, string>();
+			internal static readonly Dictionary<string, int> _guidMapping = new Dictionary<string, int>();
 
 			internal static void Init()
 			{
@@ -66,7 +64,7 @@ namespace CharacterAccessory
 			{
 				private readonly ChaControl _chaCtrl;
 				private readonly CharaCustomFunctionController _pluginCtrl;
-				private Dictionary<string, object> _charaAccData = new Dictionary<string, object>();
+				private readonly Dictionary<string, object> _charaAccData = new Dictionary<string, object>();
 
 				internal UrineBag(ChaControl ChaControl)
 				{
@@ -79,6 +77,7 @@ namespace CharacterAccessory
 						Type _type = _types[_key.Replace("List", "")];
 						Type _generic = typeof(List<>).MakeGenericType(_type);
 						_charaAccData[_key] = Activator.CreateInstance(_generic);
+						_types[_key] = _generic;
 					}
 				}
 
@@ -104,8 +103,12 @@ namespace CharacterAccessory
 				{
 					if (!_installed) return null;
 					Dictionary<string, string> _json = new Dictionary<string, string>();
+					/*
 					_json["TriggerPropertyList"] = JSONSerializer.Serialize(_charaAccData["TriggerPropertyList"].GetType(), _charaAccData["TriggerPropertyList"]);
 					_json["TriggerGroupList"] = JSONSerializer.Serialize(_charaAccData["TriggerGroupList"].GetType(), _charaAccData["TriggerGroupList"]);
+					*/
+					foreach (string _key in _containerKeys)
+						_json[_key] = JSONSerializer.Serialize(_types[_key], _charaAccData[_key]);
 
 					return _json;
 				}

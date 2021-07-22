@@ -8,24 +8,17 @@ namespace CharacterAccessory
 	{
 		internal static class CumOnOverSupport
 		{
-			private static BaseUnityPlugin _instance = null;
-			private static bool _installed = false;
+			internal static BaseUnityPlugin _instance = null;
+			internal static bool _installed = false;
 
 			internal static void Init()
 			{
-				BepInEx.Bootstrap.Chainloader.PluginInfos.TryGetValue("madevil.kk.CumOnOver", out PluginInfo _pluginInfo);
-				_instance = _pluginInfo?.Instance;
+				_instance = JetPack.Toolbox.GetPluginInstance("madevil.kk.CumOnOver");
 				if (_instance != null)
 					_installed = true;
 
-				HooksInit();
-			}
-
-			internal static void HooksInit()
-			{
-				if (!_installed) return;
-
-				HooksInstance["General"].Patch(_instance.GetType().Assembly.GetType("CumOnOver.CumOnOver+Hooks").GetMethod("ChaControl_UpdateClothesSiru", AccessTools.all), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.ChaControl_UpdateClothesSiru_Prefix)));
+				if (_installed)
+					HooksInstance["General"].Patch(_instance.GetType().Assembly.GetType("CumOnOver.CumOnOver+Hooks").GetMethod("ChaControl_UpdateClothesSiru", AccessTools.all), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.ChaControl_UpdateClothesSiru_Prefix)));
 			}
 
 			internal static class Hooks

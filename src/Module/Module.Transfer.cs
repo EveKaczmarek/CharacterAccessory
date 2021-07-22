@@ -1,7 +1,4 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
-
-using UnityEngine;
 
 using BepInEx.Logging;
 using HarmonyLib;
@@ -18,8 +15,8 @@ namespace CharacterAccessory
 			{
 				DebugMsg(LogLevel.Warning, $"[TransferPartsInfoCoroutine][{ChaControl.GetFullname()}] fired");
 
-				yield return new WaitForEndOfFrame();
-				yield return new WaitForEndOfFrame();
+				yield return JetPack.Toolbox.WaitForEndOfFrame;
+				yield return JetPack.Toolbox.WaitForEndOfFrame;
 
 				TransferPartsInfo();
 			}
@@ -36,8 +33,8 @@ namespace CharacterAccessory
 
 				for (int i = 0; i < QueueList.Count; i++)
 				{
-					int srcIndex = QueueList[i].srcSlot;
-					int dstIndex = QueueList[i].dstSlot;
+					int srcIndex = QueueList[i].SrcSlot;
+					int dstIndex = QueueList[i].DstSlot;
 					DebugMsg(LogLevel.Warning, $"[TransferPartsInfo][{ChaControl.GetFullname()}][{srcIndex}][{dstIndex}]");
 					AccessoryTransferEventArgs ev = new AccessoryTransferEventArgs(srcIndex, dstIndex);
 

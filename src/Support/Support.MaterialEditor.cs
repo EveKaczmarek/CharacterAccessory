@@ -4,10 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-using UnityEngine;
 using UniRx;
 using ParadoxNotion.Serialization;
-using MessagePack;
 
 using BepInEx;
 using BepInEx.Logging;
@@ -15,6 +13,7 @@ using HarmonyLib;
 
 using KKAPI.Chara;
 using KKAPI.Maker;
+using JetPack;
 
 namespace CharacterAccessory
 {
@@ -22,9 +21,9 @@ namespace CharacterAccessory
 	{
 		internal static class MaterialEditorSupport
 		{
-			private static BaseUnityPlugin _instance = null;
-			private static bool _legacy = false;
-			private static Dictionary<string, Type> _types = new Dictionary<string, Type>();
+			internal static BaseUnityPlugin _instance = null;
+			internal static bool _legacy = false;
+			internal static readonly Dictionary<string, Type> _types = new Dictionary<string, Type>();
 
 			private static readonly List<string> _containerKeys = new List<string>() { "RendererPropertyList", "MaterialShaderList", "MaterialFloatPropertyList", "MaterialColorPropertyList", "MaterialTexturePropertyList" };
 
@@ -45,6 +44,8 @@ namespace CharacterAccessory
 					Logger.LogWarning($"Material Editor version {_pluginInfo.Metadata.Version} found, running in legacy mode");
 				else
 					_containerKeys.Add("MaterialCopyList");
+
+				HooksInstance["General"].Patch(_types["MaterialEditorCharaController"].GetMethod("LoadData", AccessTools.all, null, new[] { typeof(bool), typeof(bool), typeof(bool) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_IEnumerator_Prefix)));
 			}
 
 			internal static CharaCustomFunctionController GetController(ChaControl _chaCtrl) => Traverse.Create(_instance).Method("GetCharaController", new object[] { _chaCtrl }).GetValue<CharaCustomFunctionController>();
@@ -53,8 +54,8 @@ namespace CharacterAccessory
 			{
 				private readonly ChaControl _chaCtrl;
 				private readonly CharaCustomFunctionController _pluginCtrl;
-				private Dictionary<string, object> _extdataLink = new Dictionary<string, object>();
-				private Dictionary<string, object> _charaAccData = new Dictionary<string, object>();
+				private readonly Dictionary<string, object> _extdataLink = new Dictionary<string, object>();
+				private readonly Dictionary<string, object> _charaAccData = new Dictionary<string, object>();
 				private Dictionary<int, byte[]> _texData = new Dictionary<int, byte[]>();
 
 				internal UrineBag(ChaControl ChaControl)
@@ -64,11 +65,6 @@ namespace CharacterAccessory
 
 					foreach (string _key in _containerKeys)
 					{
-						/*
-						_extdataLink[_key] = Traverse.Create(_pluginCtrl).Field(_key).GetValue();
-						_charaAccData[_key] = _extdataLink[_key].JsonClone();
-						Traverse.Create(_charaAccData[_key]).Method("Clear").GetValue();
-						*/
 						string _name = "KK_Plugins.MaterialEditor.MaterialEditorCharaController+" + _key.Replace("List", "");
 						Type _type = _instance.GetType().Assembly.GetType(_name);
 						Type _generic = typeof(List<>).MakeGenericType(_type);
@@ -122,7 +118,6 @@ namespace CharacterAccessory
 						{
 							object x = _extdataLink[_key].RefElementAt(i).JsonClone(); // should I null cheack this?
 
-							//if (Traverse.Create(x).Field("ObjectType").GetValue<int>() != (int) ObjectType.Accessory) continue;
 							if (Traverse.Create(x).Field("ObjectType").Method("ToString").GetValue<string>() != "Accessory") continue;
 							if (Traverse.Create(x).Field("CoordinateIndex").GetValue<int>() != _coordinateIndex) continue;
 							if (_slots.IndexOf(Traverse.Create(x).Field("Slot").GetValue<int>()) < 0) continue;
@@ -238,16 +233,6 @@ namespace CharacterAccessory
 					set { _texData = value; }
 				}
 
-				private object MoveCoordinateIndex(object _obj, int _srcCoordinateIndex, int _dstCoordinateIndex)
-				{
-					if (_obj == null) return null;
-					Traverse _traverse = Traverse.Create(_obj);
-					if (_traverse.Field("ObjectType").Method("ToString").GetValue<string>() != "Accessory") return null;
-					if (_traverse.Field("CoordinateIndex").GetValue<int>() != _srcCoordinateIndex) return null;
-					_traverse.Field("CoordinateIndex").SetValue(_dstCoordinateIndex);
-					return _obj;
-				}
-
 				private object MoveSlot(object _obj, int _coordinateIndex, int _srcSlotIndex, int _dstSlotIndex)
 				{
 					if (_obj == null) return null;
@@ -259,15 +244,6 @@ namespace CharacterAccessory
 					return _obj;
 				}
 			}
-
-			public enum ObjectType
-			{
-				Unknown,
-				Clothing,
-				Accessory,
-				Hair,
-				Character
-			};
 		}
 	}
 }

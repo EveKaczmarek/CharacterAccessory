@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-using UnityEngine;
 using UniRx;
 
 using BepInEx.Logging;
@@ -67,8 +66,8 @@ namespace CharacterAccessory
 			{
 				DebugMsg(LogLevel.Warning, $"[CopyPluginSettingCoroutine][{ChaControl.GetFullname()}] fired");
 
-				yield return new WaitForEndOfFrame();
-				yield return new WaitForEndOfFrame();
+				yield return JetPack.Toolbox.WaitForEndOfFrame;
+				yield return JetPack.Toolbox.WaitForEndOfFrame;
 
 				CopyPluginSetting(ev);
 			}

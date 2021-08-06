@@ -8,6 +8,7 @@ using BepInEx.Logging;
 using HarmonyLib;
 
 using KKAPI.Maker;
+using JetPack;
 
 namespace CharacterAccessory
 {
@@ -17,7 +18,7 @@ namespace CharacterAccessory
 		{
 			internal void CopyPartsInfo()
 			{
-				DebugMsg(LogLevel.Warning, $"[CopyPartsInfo][{ChaControl.GetFullname()}] fired");
+				DebugMsg(LogLevel.Warning, $"[CopyPartsInfo][{ChaControl.GetFullName()}] fired");
 
 				if (!DuringLoading)
 				{
@@ -42,7 +43,7 @@ namespace CharacterAccessory
 					if (PartsInfo[i].type > 120)
 						SlotIndexes.Add(i);
 				}
-				DebugMsg(LogLevel.Warning, $"[CopyPartsInfo][{ChaControl.GetFullname()}][Slots: {string.Join(",", SlotIndexes.Select(Slot => Slot.ToString()).ToArray())}]");
+				DebugMsg(LogLevel.Warning, $"[CopyPartsInfo][{ChaControl.GetFullName()}][Slots: {string.Join(",", SlotIndexes.Select(Slot => Slot.ToString()).ToArray())}]");
 				AccessoryCopyEventArgs ev = new AccessoryCopyEventArgs(SlotIndexes, (ChaFileDefine.CoordinateType) ReferralIndex, (ChaFileDefine.CoordinateType) CurrentCoordinateIndex);
 
 				MoreAccessoriesSupport.CopyPartsInfo(ChaControl, ev);
@@ -64,17 +65,17 @@ namespace CharacterAccessory
 
 			internal IEnumerator CopyPluginSettingCoroutine(AccessoryCopyEventArgs ev)
 			{
-				DebugMsg(LogLevel.Warning, $"[CopyPluginSettingCoroutine][{ChaControl.GetFullname()}] fired");
+				DebugMsg(LogLevel.Warning, $"[CopyPluginSettingCoroutine][{ChaControl.GetFullName()}] fired");
 
-				yield return JetPack.Toolbox.WaitForEndOfFrame;
-				yield return JetPack.Toolbox.WaitForEndOfFrame;
+				yield return Toolbox.WaitForEndOfFrame;
+				yield return Toolbox.WaitForEndOfFrame;
 
 				CopyPluginSetting(ev);
 			}
 
 			internal void CopyPluginSetting(AccessoryCopyEventArgs ev)
 			{
-				DebugMsg(LogLevel.Warning, $"[CopyPluginSetting][{ChaControl.GetFullname()}] fired");
+				DebugMsg(LogLevel.Warning, $"[CopyPluginSetting][{ChaControl.GetFullName()}] fired");
 
 				foreach (string _name in SupportList)
 					Traverse.Create(this).Field(_name).Method("CopyPartsInfo", new object[] { ev }).GetValue();

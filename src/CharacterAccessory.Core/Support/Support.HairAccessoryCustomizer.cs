@@ -37,7 +37,7 @@ namespace CharacterAccessory
 					_types["HairAccessoryController"] = _assembly.GetType("KK_Plugins.HairAccessoryCustomizer+HairAccessoryController");
 					_types["HairAccessoryInfo"] = _assembly.GetType("KK_Plugins.HairAccessoryCustomizer+HairAccessoryController+HairAccessoryInfo");
 
-					HooksInstance["General"].Patch(_types["HairAccessoryController"].GetMethod("UpdateAccessories", AccessTools.all, null, new[] { typeof(bool) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
+					_hooksInstance["General"].Patch(_types["HairAccessoryController"].GetMethod("UpdateAccessories", AccessTools.all, null, new[] { typeof(bool) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
 				}
 			}
 
@@ -84,7 +84,7 @@ namespace CharacterAccessory
 						FakeHairAccessoryInfo _info = new FakeHairAccessoryInfo(x.Value);
 						_json[x.Key] = JSONSerializer.Serialize(typeof(FakeHairAccessoryInfo), _info);
 #if DEBUG
-						DebugMsg(LogLevel.Debug, $"[HairAccessoryCustomizer][Save][{_chaCtrl.GetFullname()}][{x.Key}]\n{DisplayObjectInfo(_info)}\n\n");
+						DebugMsg(LogLevel.Debug, $"[HairAccessoryCustomizer][Save][{_chaCtrl.GetFullName()}][{x.Key}]\n{DisplayObjectInfo(_info)}\n\n");
 #endif
 					}
 
@@ -102,7 +102,7 @@ namespace CharacterAccessory
 						FakeHairAccessoryInfo _info = JSONSerializer.Deserialize<FakeHairAccessoryInfo>(x.Value);
 						_charaAccData[x.Key] = _info.Convert();
 #if DEBUG
-						DebugMsg(LogLevel.Debug, $"[HairAccessoryCustomizer][Load][{_chaCtrl.GetFullname()}][{x.Key}]\n{DisplayObjectInfo(_charaAccData[x.Key])}\n\n");
+						DebugMsg(LogLevel.Debug, $"[HairAccessoryCustomizer][Load][{_chaCtrl.GetFullName()}][{x.Key}]\n{DisplayObjectInfo(_charaAccData[x.Key])}\n\n");
 #endif
 					}
 				}
@@ -143,11 +143,11 @@ namespace CharacterAccessory
 					{
 						if (_extdataLink.RefTryGetValue(x.Key) != null)
 						{
-							DebugMsg(LogLevel.Warning, $"[HairAccessoryCustomizer][Restore][{_chaCtrl.GetFullname()}][{x.Key}] remove HairAccessoryInfo");
+							DebugMsg(LogLevel.Warning, $"[HairAccessoryCustomizer][Restore][{_chaCtrl.GetFullName()}][{x.Key}] remove HairAccessoryInfo");
 							Traverse.Create(_extdataLink).Method("Remove", new object[] { x.Key }).GetValue();
 						}
 #if DEBUG
-						DebugMsg(LogLevel.Warning, $"[HairAccessoryCustomizer][Restore][{_chaCtrl.GetFullname()}][{x.Key}]\n{DisplayObjectInfo(x.Value)}");
+						DebugMsg(LogLevel.Warning, $"[HairAccessoryCustomizer][Restore][{_chaCtrl.GetFullName()}][{x.Key}]\n{DisplayObjectInfo(x.Value)}");
 #endif
 						Traverse.Create(_extdataLink).Method("Add", new object[] { x.Key, x.Value.JsonClone() }).GetValue();
 					}

@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>5a8fdb27-ffca-4a77-ab0f-afdef9a034ed</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>CharacterAccessory.Core</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Controller.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Maker.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Plugin.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Hooks.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Studio.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Support\Support.AAAPK.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Support\Support.BonerStateSync.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Support\Support.CumOnOver.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Support\Support.MoreAccessories.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Support\Support.MoreOutfits.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Support\Support.DynamicBoneEditor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Support\Support.HairAccessoryCustomizer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Support\Support.MaterialEditor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Support\Support.MaterialRouter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Support\Support.AccStateSync.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Module\Module.Queue.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Module\Module.Transfer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Module\Module.Copy.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Module\Module.Chara.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+</Project>

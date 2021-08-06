@@ -9,6 +9,8 @@ using BepInEx.Logging;
 using HarmonyLib;
 using Sideloader.AutoResolver;
 
+using JetPack;
+
 namespace CharacterAccessory
 {
 	public partial class CharacterAccessory
@@ -73,10 +75,10 @@ namespace CharacterAccessory
 
 			internal IEnumerator RestorePartsInfoCoroutine()
 			{
-				DebugMsg(LogLevel.Warning, $"[RestoreCoroutine][{ChaControl.GetFullname()}] fired");
+				DebugMsg(LogLevel.Warning, $"[RestoreCoroutine][{ChaControl.GetFullName()}] fired");
 
-				yield return JetPack.Toolbox.WaitForEndOfFrame;
-				yield return JetPack.Toolbox.WaitForEndOfFrame;
+				yield return Toolbox.WaitForEndOfFrame;
+				yield return Toolbox.WaitForEndOfFrame;
 
 				RestorePartsInfo();
 			}
@@ -95,7 +97,7 @@ namespace CharacterAccessory
 
 			internal void RestorePartsInfo()
 			{
-				DebugMsg(LogLevel.Warning, $"[RestorePartsInfo][{ChaControl.GetFullname()}] fired");
+				DebugMsg(LogLevel.Warning, $"[RestorePartsInfo][{ChaControl.GetFullName()}] fired");
 
 				if (!DuringLoading)
 					return;
@@ -121,7 +123,7 @@ namespace CharacterAccessory
 					return;
 				}
 
-				DebugMsg(LogLevel.Info, $"[RestorePartsInfo][{ChaControl.GetFullname()}][Slots: {string.Join(",", PartsInfo.Keys.Select(Slot => Slot.ToString()).ToArray())}]");
+				DebugMsg(LogLevel.Info, $"[RestorePartsInfo][{ChaControl.GetFullName()}][Slots: {string.Join(",", PartsInfo.Keys.Select(Slot => Slot.ToString()).ToArray())}]");
 
 				foreach (KeyValuePair<int, ChaFileAccessory.PartsInfo> _part in PartsInfo)
 					MoreAccessoriesSupport.SetPartsInfo(ChaControl, _coordinateIndex, _part.Key, _part.Value);
@@ -143,17 +145,17 @@ namespace CharacterAccessory
 
 			internal IEnumerator RestorePluginSettingCoroutine()
 			{
-				DebugMsg(LogLevel.Warning, $"[RestorePluginSettingCoroutine][{ChaControl.GetFullname()}] fired");
+				DebugMsg(LogLevel.Warning, $"[RestorePluginSettingCoroutine][{ChaControl.GetFullName()}] fired");
 
-				yield return JetPack.Toolbox.WaitForEndOfFrame;
-				yield return JetPack.Toolbox.WaitForEndOfFrame;
+				yield return Toolbox.WaitForEndOfFrame;
+				yield return Toolbox.WaitForEndOfFrame;
 
 				RestorePluginSetting();
 			}
 
 			internal void RestorePluginSetting()
 			{
-				DebugMsg(LogLevel.Warning, $"[RestorePluginSetting][{ChaControl.GetFullname()}] fired");
+				DebugMsg(LogLevel.Warning, $"[RestorePluginSetting][{ChaControl.GetFullName()}] fired");
 
 				foreach (string _name in SupportList)
 					Traverse.Create(this).Field(_name).Method("Restore").GetValue();

@@ -2,6 +2,8 @@
 using BepInEx.Logging;
 using HarmonyLib;
 
+using JetPack;
+
 namespace CharacterAccessory
 {
 	public partial class CharacterAccessory
@@ -18,7 +20,7 @@ namespace CharacterAccessory
 					_installed = true;
 
 				if (_installed)
-					HooksInstance["General"].Patch(_instance.GetType().Assembly.GetType("CumOnOver.CumOnOver+Hooks").GetMethod("ChaControl_UpdateClothesSiru", AccessTools.all), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.ChaControl_UpdateClothesSiru_Prefix)));
+					_hooksInstance["General"].Patch(_instance.GetType().Assembly.GetType("CumOnOver.CumOnOver+Hooks").GetMethod("ChaControl_UpdateClothesSiru", AccessTools.all), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.ChaControl_UpdateClothesSiru_Prefix)));
 			}
 
 			internal static class Hooks
@@ -32,7 +34,7 @@ namespace CharacterAccessory
 
 					if (!flag)
 					{
-						DebugMsg(LogLevel.Warning, $"[ChaControl_UpdateClothesSiru_Prefix][{__0.GetFullname()}] await loading");
+						DebugMsg(LogLevel.Warning, $"[ChaControl_UpdateClothesSiru_Prefix][{__0.GetFullName()}] await loading");
 						return false;
 					}
 					return flag;

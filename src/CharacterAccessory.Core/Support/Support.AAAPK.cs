@@ -47,7 +47,7 @@ namespace CharacterAccessory
 					_types["AAAPKController"] = _assembly.GetType("AAAPK.AAAPK+AAAPKController");
 					_types["ParentRule"] = _assembly.GetType("AAAPK.AAAPK+ParentRule");
 
-					HooksInstance["General"].Patch(_types["AAAPKController"].GetMethod("ApplyParentRuleList", AccessTools.all, null, new[] { typeof(string) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
+					_hooksInstance["General"].Patch(_types["AAAPKController"].GetMethod("ApplyParentRuleList", AccessTools.all, null, new[] { typeof(string) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
 				}
 			}
 
@@ -85,7 +85,7 @@ namespace CharacterAccessory
 					foreach (object x in _charaAccData)
 						_json.Add(JSONSerializer.Serialize(_types["ParentRule"], x));
 #if DEBUG
-					DebugMsg(LogLevel.Debug, $"[AAAPK][Save][{_chaCtrl.GetFullname()}]\n{JSONSerializer.Serialize(_types["ParentRule"], _json, true)}");
+					DebugMsg(LogLevel.Debug, $"[AAAPK][Save][{_chaCtrl.GetFullName()}]\n{JSONSerializer.Serialize(_types["ParentRule"], _json, true)}");
 #endif
 					return _json;
 				}
@@ -99,7 +99,7 @@ namespace CharacterAccessory
 					foreach (string x in _json)
 						_charaAccData.Add(JSONSerializer.Deserialize(_types["ParentRule"], x));
 #if DEBUG
-					DebugMsg(LogLevel.Debug, $"[AAAPK][Load][{_chaCtrl.GetFullname()}]\n{JSONSerializer.Serialize(_types["ParentRule"], _json, true)}");
+					DebugMsg(LogLevel.Debug, $"[AAAPK][Load][{_chaCtrl.GetFullName()}]\n{JSONSerializer.Serialize(_types["ParentRule"], _json, true)}");
 #endif
 				}
 
@@ -126,10 +126,10 @@ namespace CharacterAccessory
 						_traverse.Property("Coordinate").SetValue(-1);
 						Traverse.Create(_charaAccData).Method("Add", new object[] { x }).GetValue();
 #if DEBUG
-						DebugMsg(LogLevel.Warning, $"[AAAPK][Backup][Slot: {_chaCtrl.GetFullname()}][{_traverse.Property("Slot").GetValue<int>()}]");
+						DebugMsg(LogLevel.Warning, $"[AAAPK][Backup][Slot: {_chaCtrl.GetFullName()}][{_traverse.Property("Slot").GetValue<int>()}]");
 #endif
 					}
-					DebugMsg(LogLevel.Warning, $"[AAAPK][Backup][Count: {_chaCtrl.GetFullname()}][{_charaAccData.Count}]");
+					DebugMsg(LogLevel.Warning, $"[AAAPK][Backup][Count: {_chaCtrl.GetFullName()}][{_charaAccData.Count}]");
 				}
 
 				internal void Restore()

@@ -13,6 +13,7 @@ using BepInEx.Logging;
 using HarmonyLib;
 
 using KKAPI.Maker;
+using JetPack;
 
 namespace CharacterAccessory
 {
@@ -25,18 +26,18 @@ namespace CharacterAccessory
 
 			internal static void Init()
 			{
-				_instance = JetPack.MoreAccessories.Instance;
+				_instance = MoreAccessories.Instance;
 				Assembly _assembly = _instance.GetType().Assembly;
-				_legacy = !JetPack.MoreAccessories.NewVer;
+				_legacy = !MoreAccessories.NewVer;
 #if DEBUG
 				if (_legacy)
 					Logger.LogWarning($"MoreAccessories version {BepInEx.Bootstrap.Chainloader.PluginInfos.Values.FirstOrDefault(x => x.Instance == _instance).Metadata.Version} found, running in legacy mode");
 #endif
 
-				HooksInstance["General"].Patch(_instance.GetType().Assembly.GetType("MoreAccessoriesKOI.ChaControl_UpdateVisible_Patches").GetMethod("Postfix", AccessTools.all, null, new[] { typeof(ChaControl) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.ChaControl_UpdateVisible_Patches_Prefix)));
+				_hooksInstance["General"].Patch(_instance.GetType().Assembly.GetType("MoreAccessoriesKOI.ChaControl_UpdateVisible_Patches").GetMethod("Postfix", AccessTools.all, null, new[] { typeof(ChaControl) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.ChaControl_UpdateVisible_Patches_Prefix)));
 
 				if (CharaStudio.Running)
-					HooksInstance["General"].Patch(_instance.GetType().GetMethod("UpdateStudioUI", AccessTools.all, null, new Type[0], null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.MoreAccessories_UpdateStudioUI_Prefix)));
+					_hooksInstance["General"].Patch(_instance.GetType().GetMethod("UpdateStudioUI", AccessTools.all, null, new Type[0], null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.MoreAccessories_UpdateStudioUI_Prefix)));
 			}
 
 			internal static void UpdateStudioUI(ChaControl _chaCtrl)
@@ -57,7 +58,7 @@ namespace CharacterAccessory
 					if (_pluginCtrl.DuringLoading)
 					{
 #if DEBUG
-						DebugMsg(LogLevel.Warning, $"[ChaControl_UpdateVisible_Patches_Prefix][{__0.GetFullname()}] await loading");
+						DebugMsg(LogLevel.Warning, $"[ChaControl_UpdateVisible_Patches_Prefix][{__0.GetFullName()}] await loading");
 #endif
 						return false;
 					}
@@ -66,7 +67,7 @@ namespace CharacterAccessory
 
 				internal static bool MoreAccessories_UpdateStudioUI_Prefix(object __instance) // studio only
 				{
-					if (!CfgMAHookUpdateStudioUI.Value) return true;
+					if (!_cfgMAHookUpdateStudioUI.Value) return true;
 
 					bool flag = true;
 
@@ -79,7 +80,7 @@ namespace CharacterAccessory
 					if (!flag)
 					{
 #if DEBUG
-						DebugMsg(LogLevel.Warning, $"[MoreAccessories_UpdateStudioUI_Prefix][{CharaStudio.CurOCIChar.charInfo.GetFullname()}] await loading");
+						DebugMsg(LogLevel.Warning, $"[MoreAccessories_UpdateStudioUI_Prefix][{CharaStudio.CurOCIChar.charInfo.GetFullName()}] await loading");
 #endif
 						return false;
 					}
@@ -104,33 +105,33 @@ namespace CharacterAccessory
 
 			internal static ChaFileAccessory.PartsInfo GetPartsInfo(ChaControl _chaCtrl, int _coordinateIndex, int _slotIndex)
 			{
-				return JetPack.Accessory.GetPartsInfo(_chaCtrl, _coordinateIndex, _slotIndex);
+				return Accessory.GetPartsInfo(_chaCtrl, _coordinateIndex, _slotIndex);
 			}
 
 			internal static void SetPartsInfo(ChaControl _chaCtrl, int _coordinateIndex, int _slotIndex, ChaFileAccessory.PartsInfo _part)
 			{
 				byte[] _byte = MessagePackSerializer.Serialize(_part);
-				JetPack.Accessory.SetPartsInfo(_chaCtrl, _coordinateIndex, _slotIndex, MessagePackSerializer.Deserialize<ChaFileAccessory.PartsInfo>(_byte));
+				Accessory.SetPartsInfo(_chaCtrl, _coordinateIndex, _slotIndex, MessagePackSerializer.Deserialize<ChaFileAccessory.PartsInfo>(_byte));
 			}
 
 			internal static List<ChaFileAccessory.PartsInfo> ListPartsInfo(ChaControl _chaCtrl, int _coordinateIndex)
 			{
-				return JetPack.Accessory.ListPartsInfo(_chaCtrl, _coordinateIndex);
+				return Accessory.ListPartsInfo(_chaCtrl, _coordinateIndex);
 			}
 
 			internal static void CheckAndPadPartInfo(ChaControl _chaCtrl, int _coordinateIndex, int _slotIndex)
 			{
-				JetPack.MoreAccessories.CheckAndPadPartInfo(_chaCtrl, _coordinateIndex, _slotIndex);
+				MoreAccessories.CheckAndPadPartInfo(_chaCtrl, _coordinateIndex, _slotIndex);
 			}
 
 			internal static ChaAccessoryComponent GetChaAccessoryComponent(ChaControl _chaCtrl, int _slotIndex)
 			{
-				return JetPack.Accessory.GetChaAccessoryComponent(_chaCtrl, _slotIndex);
+				return Accessory.GetChaAccessoryComponent(_chaCtrl, _slotIndex);
 			}
 
 			internal static bool IsHairAccessory(ChaControl _chaCtrl, int _slotIndex)
 			{
-				return JetPack.Accessory.IsHairAccessory(_chaCtrl, _slotIndex);
+				return Accessory.IsHairAccessory(_chaCtrl, _slotIndex);
 			}
 
 			internal static void CopyPartsInfo(ChaControl _chaCtrl, AccessoryCopyEventArgs ev)

@@ -24,7 +24,7 @@ namespace CharacterAccessory
 				}
 
 				if (_installed)
-					HooksInstance["General"].Patch(_instance.GetType().Assembly.GetType("BonerStateSync.BonerStateSync+BonerStateSyncController").GetMethod("InitCurOutfitTriggerInfo", AccessTools.all, null, new[] { typeof(string) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
+					_hooksInstance["General"].Patch(_instance.GetType().Assembly.GetType("BonerStateSync.BonerStateSync+BonerStateSyncController").GetMethod("InitCurOutfitTriggerInfo", AccessTools.all, null, new[] { typeof(string) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
 			}
 		}
 	}

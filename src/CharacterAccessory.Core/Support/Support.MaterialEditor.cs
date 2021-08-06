@@ -11,9 +11,12 @@ using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
 
-using KKAPI.Chara;
 using KKAPI.Maker;
 using JetPack;
+
+using KK_Plugins;
+using KK_Plugins.MaterialEditor;
+using static KK_Plugins.MaterialEditor.MaterialEditorCharaController;
 
 namespace CharacterAccessory
 {
@@ -45,15 +48,15 @@ namespace CharacterAccessory
 				else
 					_containerKeys.Add("MaterialCopyList");
 
-				HooksInstance["General"].Patch(_types["MaterialEditorCharaController"].GetMethod("LoadData", AccessTools.all, null, new[] { typeof(bool), typeof(bool), typeof(bool) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_IEnumerator_Prefix)));
+				_hooksInstance["General"].Patch(_types["MaterialEditorCharaController"].GetMethod("LoadData", AccessTools.all, null, new[] { typeof(bool), typeof(bool), typeof(bool) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_IEnumerator_Prefix)));
 			}
 
-			internal static CharaCustomFunctionController GetController(ChaControl _chaCtrl) => Traverse.Create(_instance).Method("GetCharaController", new object[] { _chaCtrl }).GetValue<CharaCustomFunctionController>();
+			internal static MaterialEditorCharaController GetController(ChaControl _chaCtrl) => _chaCtrl?.gameObject?.GetComponent<MaterialEditorCharaController>();
 
 			internal class UrineBag
 			{
 				private readonly ChaControl _chaCtrl;
-				private readonly CharaCustomFunctionController _pluginCtrl;
+				private readonly MaterialEditorCharaController _pluginCtrl;
 				private readonly Dictionary<string, object> _extdataLink = new Dictionary<string, object>();
 				private readonly Dictionary<string, object> _charaAccData = new Dictionary<string, object>();
 				private Dictionary<int, byte[]> _texData = new Dictionary<int, byte[]>();
@@ -112,7 +115,7 @@ namespace CharacterAccessory
 					foreach (string _key in _containerKeys)
 					{
 						int n = Traverse.Create(_extdataLink[_key]).Property("Count").GetValue<int>();
-						DebugMsg(LogLevel.Warning, $"[MaterialEditor][Backup][{_chaCtrl.GetFullname()}][_extdataLink[{_key}] count: {n}]");
+						DebugMsg(LogLevel.Warning, $"[MaterialEditor][Backup][{_chaCtrl.GetFullName()}][_extdataLink[{_key}] count: {n}]");
 
 						for (int i = 0; i < n; i++)
 						{
@@ -126,24 +129,23 @@ namespace CharacterAccessory
 							Traverse.Create(_charaAccData[_key]).Method("Add", new object[] { x }).GetValue();
 						}
 
-						DebugMsg(LogLevel.Warning, $"[MaterialEditor][Backup][{_chaCtrl.GetFullname()}][_charaAccData[{_key}] count: {Traverse.Create(_charaAccData[_key]).Property("Count").GetValue<int>()}]");
+						DebugMsg(LogLevel.Warning, $"[MaterialEditor][Backup][{_chaCtrl.GetFullName()}][_charaAccData[{_key}] count: {Traverse.Create(_charaAccData[_key]).Property("Count").GetValue<int>()}]");
 						//string json = JSONSerializer.Serialize(_charaAccData[_key].GetType(), _charaAccData[_key], true);
 						//DebugMsg(LogLevel.Warning, $"{_charaAccData[_key].GetType()}\n" + json);
 					}
 
-					object TextureDictionary = Traverse.Create(_pluginCtrl).Field("TextureDictionary").GetValue();
-					foreach (object x in _charaAccData["MaterialTexturePropertyList"] as IList)
+					foreach (MaterialTextureProperty x in _charaAccData["MaterialTexturePropertyList"] as List<MaterialTextureProperty>)
 					{
-						int? TexID = Traverse.Create(x).Field("TexID").GetValue<int?>();
-						if (TexID != null)
+						if (x.TexID != null)
 						{
-							if (_texData.ContainsKey((int) TexID)) continue;
+							int TexID = (int) x.TexID;
+							if (_texData.ContainsKey(TexID)) continue;
 
-							object _tex = TextureDictionary.RefTryGetValue(TexID);
+							_pluginCtrl.TextureDictionary.TryGetValue(TexID, out TextureContainer _tex);
 							if (_tex != null)
 							{
-								_texData[(int) TexID] = Traverse.Create(_tex).Property("Data").GetValue<byte[]>();
-								DebugMsg(LogLevel.Warning, $"[TexID: {TexID}][Length: {_texData[(int) TexID].Length}]");
+								_texData[TexID] = _tex.Data;
+								DebugMsg(LogLevel.Warning, $"[TexID: {TexID}][Length: {_texData[TexID].Length}]");
 							}
 						}
 					}
@@ -155,10 +157,7 @@ namespace CharacterAccessory
 
 					Dictionary<int, int> _mapping = new Dictionary<int, int>();
 					foreach (KeyValuePair<int, byte[]> x in _texData)
-					{
-						int _id = Traverse.Create(_pluginCtrl).Method("SetAndGetTextureID", new object[] { x.Value }).GetValue<int>();
-						_mapping[x.Key] = _id;
-					}
+						_mapping[x.Key] = _pluginCtrl.SetAndGetTextureID(x.Value);
 
 					foreach (string _key in _containerKeys)
 					{
@@ -182,7 +181,7 @@ namespace CharacterAccessory
 
 				internal void CopyPartsInfo(AccessoryCopyEventArgs ev)
 				{
-					Traverse.Create(_pluginCtrl).Method("AccessoriesCopiedEvent", new object[] { null, ev }).GetValue();
+					_pluginCtrl.AccessoriesCopiedEvent(null, ev);
 				}
 
 				internal void TransferPartsInfo(AccessoryTransferEventArgs ev)
@@ -204,27 +203,7 @@ namespace CharacterAccessory
 
 				internal void RemovePartsInfo(int _slotIndex)
 				{
-					/*
-					GameObject _gameObject = _chaCtrl.GetAccessoryObject(_slotIndex);
-					if (_gameObject != null)
-					{
-						Renderer[] _renderers = _gameObject.GetComponentsInChildren<Renderer>();
-						foreach (Renderer _renderer in _renderers)
-						{
-							foreach (Material _material in _renderer.materials)
-							{
-								PropertyInfo[] _infos = _material.GetType().GetProperties();
-								foreach (PropertyInfo _info in _infos)
-								{
-									var _property = _info.GetValue(_material, null);
-									if (_property != null && _property.GetType() == typeof(Texture2D))
-										Destroy((Texture2D) _property);
-								}
-							}
-						}
-					}
-					*/
-					Traverse.Create(_pluginCtrl).Method("AccessoryKindChangeEvent", new object[] { null, new AccessorySlotEventArgs(_slotIndex) }).GetValue();
+					_pluginCtrl.AccessoryKindChangeEvent(null, new AccessorySlotEventArgs(_slotIndex));
 				}
 
 				internal Dictionary<int, byte[]> TexContainer

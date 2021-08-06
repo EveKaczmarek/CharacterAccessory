@@ -37,7 +37,7 @@ namespace CharacterAccessory
 					_types["MaterialRouterController"] = _assembly.GetType("MaterialRouter.MaterialRouter+MaterialRouterController");
 					_types["RouteRule"] = _assembly.GetType("MaterialRouter.MaterialRouter+RouteRule");
 
-					HooksInstance["General"].Patch(_types["MaterialRouterController"].GetMethod("BuildCheckList", AccessTools.all), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
+					_hooksInstance["General"].Patch(_types["MaterialRouterController"].GetMethod("BuildCheckList", AccessTools.all), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
 				}
 			}
 
@@ -114,7 +114,7 @@ namespace CharacterAccessory
 						string _path = Traverse.Create(_rule).Property("GameObjectPath").GetValue<string>();
 						if (!_path.Contains($"/ca_slot")) continue;
 
-						//DebugMsg(LogLevel.Warning, $"[MaterialRouter][Backup][{_chaCtrl.GetFullname()}][{_path}]");
+						//DebugMsg(LogLevel.Warning, $"[MaterialRouter][Backup][{_chaCtrl.GetFullName()}][{_path}]");
 						foreach (int _slotIndex in _slots)
 						{
 							if (!_path.Contains($"/ca_slot{_slotIndex:00}/")) continue;
@@ -122,7 +122,7 @@ namespace CharacterAccessory
 							_charaAccData.Add(_rule.JsonClone());
 						}
 					}
-					//DebugMsg(LogLevel.Warning, $"[MaterialRouter][Backup][{_chaCtrl.GetFullname()}][{_charaAccData.Count}]");
+					//DebugMsg(LogLevel.Warning, $"[MaterialRouter][Backup][{_chaCtrl.GetFullName()}][{_charaAccData.Count}]");
 				}
 
 				internal void Restore()

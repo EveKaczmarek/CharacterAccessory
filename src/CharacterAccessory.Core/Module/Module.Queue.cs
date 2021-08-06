@@ -7,6 +7,7 @@ using UniRx;
 using BepInEx.Logging;
 
 using KKAPI.Maker;
+using JetPack;
 
 namespace CharacterAccessory
 {
@@ -30,7 +31,7 @@ namespace CharacterAccessory
 			{
 				bool go = true;
 
-				DebugMsg(LogLevel.Warning, $"[OnCoordinateChanged][{ChaControl.GetFullname()}][CurrentCoordinateIndex: {CurrentCoordinateIndex}]");
+				DebugMsg(LogLevel.Warning, $"[OnCoordinateChanged][{ChaControl.GetFullName()}][CurrentCoordinateIndex: {CurrentCoordinateIndex}]");
 
 				if (!AutoCopyToBlank)
 					go = false;
@@ -40,7 +41,7 @@ namespace CharacterAccessory
 					go = false;
 				if (ReferralIndex > -1 && ReferralIndex < ChaControl.chaFile.coordinate.Length && ReferralIndex == CurrentCoordinateIndex)
 					go = false;
-				if (MakerAPI.InsideAndLoaded && !CfgMakerMasterSwitch.Value)
+				if (MakerAPI.InsideAndLoaded && !_cfgMakerMasterSwitch.Value)
 					go = false;
 
 				if (go)
@@ -49,10 +50,10 @@ namespace CharacterAccessory
 
 			internal IEnumerator OnCoordinateChangedCoroutine()
 			{
-				DebugMsg(LogLevel.Warning, $"[OnCoordinateChangedCoroutine][{ChaControl.GetFullname()}] fired");
+				DebugMsg(LogLevel.Warning, $"[OnCoordinateChangedCoroutine][{ChaControl.GetFullName()}] fired");
 
-				yield return JetPack.Toolbox.WaitForEndOfFrame;
-				yield return JetPack.Toolbox.WaitForEndOfFrame;
+				yield return Toolbox.WaitForEndOfFrame;
+				yield return Toolbox.WaitForEndOfFrame;
 
 				if (MoreAccessoriesSupport.ListUsedPartsInfo(ChaControl, CurrentCoordinateIndex).Count > 0)
 					yield break;
@@ -89,7 +90,7 @@ namespace CharacterAccessory
 				else if (ReferralIndex  == -1)
 					RefLastNotEmpty = (PartsInfo.Count == 0) ? -1 : PartsInfo.Keys.Max();
 
-				DebugMsg(LogLevel.Warning, $"[PrepareQueue][{ChaControl.GetFullname()}][ReferralIndex: {ReferralIndex}][SrcLastNotEmpty: Slot{RefLastNotEmpty + 1:00}]");
+				DebugMsg(LogLevel.Warning, $"[PrepareQueue][{ChaControl.GetFullName()}][ReferralIndex: {ReferralIndex}][SrcLastNotEmpty: Slot{RefLastNotEmpty + 1:00}]");
 
 				if (RefLastNotEmpty < 0)
 				{
@@ -116,7 +117,7 @@ namespace CharacterAccessory
 				List<int> UsedPartsRev = new List<int>();
 				UsedPartsRev.AddRange(UsedParts);
 				UsedPartsRev.Reverse();
-				DebugMsg(LogLevel.Warning, $"[PrepareQueue][{ChaControl.GetFullname()}][CurrentCoordinateIndex: {CurrentCoordinateIndex}][CurFirstNotEmpty: Slot{CurFirstNotEmpty + 1:00}][CurLastNotEmpty: Slot{CurLastNotEmpty + 1:00}]");
+				DebugMsg(LogLevel.Warning, $"[PrepareQueue][{ChaControl.GetFullName()}][CurrentCoordinateIndex: {CurrentCoordinateIndex}][CurFirstNotEmpty: Slot{CurFirstNotEmpty + 1:00}][CurLastNotEmpty: Slot{CurLastNotEmpty + 1:00}]");
 
 				if (CurFirstNotEmpty <= RefLastNotEmpty)
 				{

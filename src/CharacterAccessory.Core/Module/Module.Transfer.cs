@@ -4,6 +4,7 @@ using BepInEx.Logging;
 using HarmonyLib;
 
 using KKAPI.Maker;
+using JetPack;
 
 namespace CharacterAccessory
 {
@@ -13,17 +14,17 @@ namespace CharacterAccessory
 		{
 			internal IEnumerator TransferPartsInfoCoroutine()
 			{
-				DebugMsg(LogLevel.Warning, $"[TransferPartsInfoCoroutine][{ChaControl.GetFullname()}] fired");
+				DebugMsg(LogLevel.Warning, $"[TransferPartsInfoCoroutine][{ChaControl.GetFullName()}] fired");
 
-				yield return JetPack.Toolbox.WaitForEndOfFrame;
-				yield return JetPack.Toolbox.WaitForEndOfFrame;
+				yield return Toolbox.WaitForEndOfFrame;
+				yield return Toolbox.WaitForEndOfFrame;
 
 				TransferPartsInfo();
 			}
 
 			internal void TransferPartsInfo()
 			{
-				DebugMsg(LogLevel.Warning, $"[TransferPartsInfo][{ChaControl.GetFullname()}] fired");
+				DebugMsg(LogLevel.Warning, $"[TransferPartsInfo][{ChaControl.GetFullName()}] fired");
 
 				if (QueueList.Count == 0)
 				{
@@ -35,7 +36,7 @@ namespace CharacterAccessory
 				{
 					int srcIndex = QueueList[i].SrcSlot;
 					int dstIndex = QueueList[i].DstSlot;
-					DebugMsg(LogLevel.Warning, $"[TransferPartsInfo][{ChaControl.GetFullname()}][{srcIndex}][{dstIndex}]");
+					DebugMsg(LogLevel.Warning, $"[TransferPartsInfo][{ChaControl.GetFullName()}][{srcIndex}][{dstIndex}]");
 					AccessoryTransferEventArgs ev = new AccessoryTransferEventArgs(srcIndex, dstIndex);
 
 					MoreAccessoriesSupport.TransferPartsInfo(ChaControl, ev);

@@ -20,7 +20,7 @@ namespace CharacterAccessory
 				if (_pluginCtrl.DuringLoading)
 				{
 #if DEBUG
-					DebugMsg(LogLevel.Warning, $"[DuringLoading_Prefix][{_chaCtrl.GetFullname()}] await loading");
+					DebugMsg(LogLevel.Warning, $"[DuringLoading_Prefix][{_chaCtrl.GetFullName()}] await loading");
 #endif
 					return false;
 				}
@@ -34,13 +34,10 @@ namespace CharacterAccessory
 				if (_pluginCtrl.DuringLoading)
 				{
 #if DEBUG
-					DebugMsg(LogLevel.Warning, $"[DuringLoading_Prefix][{_chaCtrl.GetFullname()}] await loading");
+					DebugMsg(LogLevel.Warning, $"[DuringLoading_Prefix][{_chaCtrl.GetFullName()}] await loading");
 #endif
 					IEnumerator original = __result;
 					__result = new[] { original, YieldBreak() }.GetEnumerator();
-
-
-
 					return false;
 				}
 				return true;
@@ -60,32 +57,11 @@ namespace CharacterAccessory
 				if (_pluginCtrl.DuringLoading)
 				{
 #if DEBUG
-					DebugMsg(LogLevel.Warning, $"[DuringLoading_Prefix][{_chaCtrl.GetFullname()}] await loading");
+					DebugMsg(LogLevel.Warning, $"[DuringLoading_Prefix][{_chaCtrl.GetFullName()}] await loading");
 #endif
 					return false;
 				}
 				return true;
-			}
-		}
-
-		internal class HooksStudio
-		{
-			[HarmonyPostfix, HarmonyPatch(typeof(TreeNodeCtrl), nameof(TreeNodeCtrl.SelectSingle), new[] { typeof(TreeNodeObject), typeof(bool) })]
-			private static void TreeNodeCtrl_SelectSingle_Postfix(TreeNodeObject _node)
-			{
-				CharaStudio.GetTreeNodeInfo(_node);
-			}
-
-			[HarmonyPostfix, HarmonyPatch(typeof(TreeNodeCtrl), nameof(TreeNodeCtrl.SelectMultiple), new[] { typeof(TreeNodeObject), typeof(TreeNodeObject) })]
-			private static void TreeNodeCtrl_SelectMultiple_Postfix(TreeNodeObject _start)
-			{
-				CharaStudio.GetTreeNodeInfo(_start);
-			}
-
-			[HarmonyPrefix, HarmonyPatch(typeof(Studio.Studio), nameof(Studio.Studio.InitScene), new[] { typeof(bool) })]
-			private static void Studio_InitScene_Prefix()
-			{
-				CharaStudio.GetTreeNodeInfo(null);
 			}
 		}
 	}

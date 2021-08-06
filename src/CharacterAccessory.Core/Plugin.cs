@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
-using UnityEngine.SceneManagement;
 
 using BepInEx;
 using BepInEx.Configuration;
@@ -12,6 +10,7 @@ using HarmonyLib;
 using KKAPI.Chara;
 using KKAPI.Maker;
 using KKAPI.Utilities;
+using JetPack;
 
 namespace CharacterAccessory
 {
@@ -28,16 +27,16 @@ namespace CharacterAccessory
 #else
 		public const string Name = "Character Accessory";
 #endif
-		public const string Version = "1.4.0.0";
+		public const string Version = "1.5.0.0";
 
 		internal static new ManualLogSource Logger;
 		internal static CharacterAccessory Instance;
-		internal static Dictionary<string, Harmony> HooksInstance = new Dictionary<string, Harmony>();
+		internal static Dictionary<string, Harmony> _hooksInstance = new Dictionary<string, Harmony>();
 
-		internal static ConfigEntry<bool> CfgMakerMasterSwitch { get; set; }
-		internal static ConfigEntry<bool> CfgDebugMode { get; set; }
-		internal static ConfigEntry<bool> CfgStudioFallbackReload { get; set; }
-		internal static ConfigEntry<bool> CfgMAHookUpdateStudioUI { get; set; }
+		internal static ConfigEntry<bool> _cfgMakerMasterSwitch { get; set; }
+		internal static ConfigEntry<bool> _cfgDebugMode { get; set; }
+		internal static ConfigEntry<bool> _cfgStudioFallbackReload { get; set; }
+		internal static ConfigEntry<bool> _cfgMAHookUpdateStudioUI { get; set; }
 
 		internal const int PluginDataVersion = 3;
 		internal static List<string> SupportList = new List<string>();
@@ -48,20 +47,17 @@ namespace CharacterAccessory
 			Logger = base.Logger;
 			Instance = this;
 
-			CfgMakerMasterSwitch = Config.Bind("Maker", "Master Switch", true, new ConfigDescription("A quick switch on the sidebar that templary disable the function", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
-			CfgStudioFallbackReload = Config.Bind("Studio", "Fallback Reload Mode", false, new ConfigDescription("Enable this if some plugins are having visual problem", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
-			CfgDebugMode = Config.Bind("Debug", "Debug Mode", false, new ConfigDescription("Showing debug messages in LogWarning level", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
-			CfgMAHookUpdateStudioUI = Config.Bind("Hook", "MoreAccessories UpdateStudioUI", true, new ConfigDescription("Performance tweak, disable it if having issue on studio chara state panel update", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
-
-			if (Application.dataPath.EndsWith("CharaStudio_Data"))
-				CharaStudio.Running = true;
+			_cfgMakerMasterSwitch = Config.Bind("Maker", "Master Switch", true, new ConfigDescription("A quick switch on the sidebar that templary disable the function", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
+			_cfgStudioFallbackReload = Config.Bind("Studio", "Fallback Reload Mode", false, new ConfigDescription("Enable this if some plugins are having visual problem", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
+			_cfgDebugMode = Config.Bind("Debug", "Debug Mode", false, new ConfigDescription("Showing debug messages in LogWarning level", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
+			_cfgMAHookUpdateStudioUI = Config.Bind("Hook", "MoreAccessories UpdateStudioUI", true, new ConfigDescription("Performance tweak, disable it if having issue on studio chara state panel update", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
 		}
 
 		private void Start()
 		{
 			CordNames = Enum.GetNames(typeof(ChaFileDefine.CoordinateType)).ToList();
 			CharacterApi.RegisterExtraBehaviour<CharacterAccessoryController>(GUID);
-			HooksInstance["General"] = Harmony.CreateAndPatchAll(typeof(Hooks));
+			_hooksInstance["General"] = Harmony.CreateAndPatchAll(typeof(Hooks));
 
 			MoreAccessoriesSupport.Init();
 #if DEBUG
@@ -79,28 +75,27 @@ namespace CharacterAccessory
 
 			if (CharaStudio.Running)
 			{
-				HooksInstance["Studio"] = Harmony.CreateAndPatchAll(typeof(HooksStudio));
-				SceneManager.sceneLoaded += CharaStudio.StartupCheck;
+				CharaStudio.OnStudioLoaded += (_sender, _args) => RegisterStudioControls();
 			}
 			else
 			{
-				MakerAPI.MakerBaseLoaded += (object sender, RegisterCustomControlsEvent ev) =>
+				MakerAPI.MakerBaseLoaded += (_sender, _args) =>
 				{
-					HooksInstance["Maker"] = Harmony.CreateAndPatchAll(typeof(HooksMaker));
+					_hooksInstance["Maker"] = Harmony.CreateAndPatchAll(typeof(HooksMaker));
 #if DEBUG
 					MoreOutfitsSupport.MakerInit();
 #endif
 					{
 						BaseUnityPlugin _instance = JetPack.Toolbox.GetPluginInstance("ClothingStateMenu");
 						if (_instance != null)
-							HooksInstance["Maker"].Patch(_instance.GetType().GetMethod("OnGUI", AccessTools.all), prefix: new HarmonyMethod(typeof(HooksMaker), nameof(HooksMaker.DuringLoading_Prefix)));
+							_hooksInstance["Maker"].Patch(_instance.GetType().GetMethod("OnGUI", AccessTools.all), prefix: new HarmonyMethod(typeof(HooksMaker), nameof(HooksMaker.DuringLoading_Prefix)));
 					}
 				};
 
-				MakerAPI.MakerExiting += (object sender, EventArgs ev) =>
+				MakerAPI.MakerExiting += (_sender, _args) =>
 				{
-					HooksInstance["Maker"].UnpatchAll(HooksInstance["Maker"].Id);
-					HooksInstance["Maker"] = null;
+					_hooksInstance["Maker"].UnpatchAll(_hooksInstance["Maker"].Id);
+					_hooksInstance["Maker"] = null;
 
 					MakerDropdownRef = null;
 					MakerToggleEnable = null;
@@ -114,7 +109,7 @@ namespace CharacterAccessory
 
 		internal static void DebugMsg(LogLevel LogLevel, string LogMsg)
 		{
-			if (CfgDebugMode.Value)
+			if (_cfgDebugMode.Value)
 				Logger.Log(LogLevel, LogMsg);
 			else
 				Logger.Log(LogLevel.Debug, LogMsg);

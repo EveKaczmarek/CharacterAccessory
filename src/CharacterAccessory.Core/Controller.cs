@@ -147,17 +147,22 @@ namespace CharacterAccessory
 						else
 							SetReferralIndex((int) loadedReferralIndex);
 
-						DebugMsg(LogLevel.Info, $"[OnReload][{ChaControl.GetFullname()}][ReferralIndex: {ReferralIndex}]");
+						DebugMsg(LogLevel.Info, $"[OnReload][{ChaControl.GetFullName()}][ReferralIndex: {ReferralIndex}]");
 					}
 					if (ExtendedData.data.TryGetValue("TextureContainer", out object loadedTextureContainer) && loadedTextureContainer != null)
 						MaterialEditor.TexContainer = MessagePackSerializer.Deserialize<Dictionary<int, byte[]>>((byte[]) loadedTextureContainer);
 
 					foreach (KeyValuePair<int, ChaFileAccessory.PartsInfo> _part in PartsInfo)
 					{
+						/*
 						if (!PartsResolveInfo.ContainsKey(_part.Key)) continue;
 						if (PartsResolveInfo[_part.Key] == null) continue;
 
 						ResolveInfo _info = PartsResolveInfo[_part.Key];
+						*/
+						PartsResolveInfo.TryGetValue(_part.Key, out ResolveInfo _info);
+						if (_info == null) continue;
+
 						MigrateData(ref _info);
 
 						if (_info != null)
@@ -188,10 +193,10 @@ namespace CharacterAccessory
 #endif
 				IEnumerator OnReloadCoroutine()
 				{
-					DebugMsg(LogLevel.Warning, $"[OnReloadCoroutine][{ChaControl.GetFullname()}] fired");
+					DebugMsg(LogLevel.Warning, $"[OnReloadCoroutine][{ChaControl.GetFullName()}] fired");
 
-					yield return JetPack.Toolbox.WaitForEndOfFrame;
-					yield return JetPack.Toolbox.WaitForEndOfFrame;
+					yield return Toolbox.WaitForEndOfFrame;
+					yield return Toolbox.WaitForEndOfFrame;
 
 					AutoCopyCheck();
 				}
@@ -206,13 +211,13 @@ namespace CharacterAccessory
 				TaskUnlock();
 				bool go = true;
 
-				DebugMsg(LogLevel.Warning, $"[OnCoordinateBeingLoaded][{ChaControl.GetFullname()}][FunctionEnable: {FunctionEnable}][ReferralIndex: {ReferralIndex}][PartsInfo.Count: {PartsInfo.Count}]");
+				DebugMsg(LogLevel.Warning, $"[OnCoordinateBeingLoaded][{ChaControl.GetFullName()}][FunctionEnable: {FunctionEnable}][ReferralIndex: {ReferralIndex}][PartsInfo.Count: {PartsInfo.Count}]");
 
 				if (!FunctionEnable)
 					go = false;
 				if (ReferralIndex == -1 && PartsInfo.Count == 0)
 					go = false;
-				if (MakerAPI.InsideAndLoaded && !CfgMakerMasterSwitch.Value)
+				if (MakerAPI.InsideAndLoaded && !_cfgMakerMasterSwitch.Value)
 					go = false;
 
 				CoordinateLoadFlags _loadFlags = MakerAPI.GetCoordinateLoadFlags();
@@ -234,10 +239,10 @@ namespace CharacterAccessory
 
 			internal IEnumerator OnCoordinateBeingLoadedCoroutine()
 			{
-				DebugMsg(LogLevel.Warning, $"[OnCoordinateBeingLoadedCoroutine][{ChaControl.GetFullname()}] fired");
+				DebugMsg(LogLevel.Warning, $"[OnCoordinateBeingLoadedCoroutine][{ChaControl.GetFullName()}] fired");
 
-				yield return JetPack.Toolbox.WaitForEndOfFrame;
-				yield return JetPack.Toolbox.WaitForEndOfFrame;
+				yield return Toolbox.WaitForEndOfFrame;
+				yield return Toolbox.WaitForEndOfFrame;
 
 				TaskLock();
 				PrepareQueue();
@@ -245,16 +250,16 @@ namespace CharacterAccessory
 
 			internal IEnumerator RefreshCoroutine()
 			{
-				DebugMsg(LogLevel.Warning, $"[RefreshCoroutine][{ChaControl.GetFullname()}] fired");
+				DebugMsg(LogLevel.Warning, $"[RefreshCoroutine][{ChaControl.GetFullName()}] fired");
 
-				yield return JetPack.Toolbox.WaitForEndOfFrame;
-				yield return JetPack.Toolbox.WaitForEndOfFrame;
+				yield return Toolbox.WaitForEndOfFrame;
+				yield return Toolbox.WaitForEndOfFrame;
 
 				TaskUnlock();
 
 				if (CharaStudio.Running)
 				{
-					if (CfgStudioFallbackReload.Value)
+					if (_cfgStudioFallbackReload.Value)
 						BigReload();
 					else
 					{
@@ -274,10 +279,10 @@ namespace CharacterAccessory
 
 			internal IEnumerator PreviewCoroutine()
 			{
-				DebugMsg(LogLevel.Warning, $"[PreviewCoroutine][{ChaControl.GetFullname()}] fired");
+				DebugMsg(LogLevel.Warning, $"[PreviewCoroutine][{ChaControl.GetFullName()}] fired");
 
-				yield return JetPack.Toolbox.WaitForEndOfFrame;
-				yield return JetPack.Toolbox.WaitForEndOfFrame;
+				yield return Toolbox.WaitForEndOfFrame;
+				yield return Toolbox.WaitForEndOfFrame;
 
 				AccStateSync.InitCurOutfitTriggerInfo("OnCoordinateBeingLoaded");
 
@@ -287,10 +292,10 @@ namespace CharacterAccessory
 
 			internal IEnumerator RefreshCharaStatePanelCoroutine()
 			{
-				DebugMsg(LogLevel.Warning, $"[RefreshCharaStatePanelCoroutine][{ChaControl.GetFullname()}] fired");
+				DebugMsg(LogLevel.Warning, $"[RefreshCharaStatePanelCoroutine][{ChaControl.GetFullName()}] fired");
 
-				yield return JetPack.Toolbox.WaitForEndOfFrame;
-				yield return JetPack.Toolbox.WaitForEndOfFrame;
+				yield return Toolbox.WaitForEndOfFrame;
+				yield return Toolbox.WaitForEndOfFrame;
 
 				HairAccessoryCustomizer.UpdateAccessories(false);
 				//AccStateSync.SyncAllAccToggle();
@@ -308,7 +313,7 @@ namespace CharacterAccessory
 						ReferralIndex = _index;
 				}
 
-				DebugMsg(LogLevel.Warning, $"[SetReferralIndex][{ChaControl.GetFullname()}][_index: {_index}][ReferralIndex: {ReferralIndex}]");
+				DebugMsg(LogLevel.Warning, $"[SetReferralIndex][{ChaControl.GetFullName()}][_index: {_index}][ReferralIndex: {ReferralIndex}]");
 			}
 
 			internal int GetReferralIndex()
@@ -320,7 +325,7 @@ namespace CharacterAccessory
 				}
 #endif
 				int _index = ReferralIndex < 0 ? ChaControl.chaFile.coordinate.Length : ReferralIndex;
-				DebugMsg(LogLevel.Info, $"[GetReferralIndex][{ChaControl.GetFullname()}][_index: {_index}][ReferralIndex: {ReferralIndex}]");
+				DebugMsg(LogLevel.Info, $"[GetReferralIndex][{ChaControl.GetFullName()}][_index: {_index}][ReferralIndex: {ReferralIndex}]");
 
 				return _index;
 			}

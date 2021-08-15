@@ -27,7 +27,7 @@ namespace CharacterAccessory
 #else
 		public const string Name = "Character Accessory";
 #endif
-		public const string Version = "1.5.0.0";
+		public const string Version = "1.5.1.0";
 
 		internal static new ManualLogSource Logger;
 		internal static CharacterAccessory Instance;

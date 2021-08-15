@@ -152,28 +152,22 @@ namespace CharacterAccessory
 					if (ExtendedData.data.TryGetValue("TextureContainer", out object loadedTextureContainer) && loadedTextureContainer != null)
 						MaterialEditor.TexContainer = MessagePackSerializer.Deserialize<Dictionary<int, byte[]>>((byte[]) loadedTextureContainer);
 
-					foreach (KeyValuePair<int, ChaFileAccessory.PartsInfo> _part in PartsInfo)
+					if (PartsInfo?.Count > 0 && PartsResolveInfo?.Count > 0)
 					{
-						/*
-						if (!PartsResolveInfo.ContainsKey(_part.Key)) continue;
-						if (PartsResolveInfo[_part.Key] == null) continue;
-
-						ResolveInfo _info = PartsResolveInfo[_part.Key];
-						*/
-						PartsResolveInfo.TryGetValue(_part.Key, out ResolveInfo _info);
-						if (_info == null) continue;
-
-						MigrateData(ref _info);
-
-						if (_info != null)
+						foreach (KeyValuePair<int, ChaFileAccessory.PartsInfo> _part in PartsInfo)
 						{
-							if (!_info.GUID.IsNullOrEmpty())
-								_info = UniversalAutoResolver.TryGetResolutionInfo(PartsResolveInfo[_part.Key].Slot, PartsResolveInfo[_part.Key].CategoryNo, PartsResolveInfo[_part.Key].GUID);
+							PartsResolveInfo.TryGetValue(_part.Key, out ResolveInfo _info);
+							if (_info == null) continue;
+
+							MigrateData(ref _info);
+							if (_info == null || _info.GUID.IsNullOrWhiteSpace()) continue;
+
+							_info = UniversalAutoResolver.TryGetResolutionInfo(PartsResolveInfo[_part.Key].Slot, PartsResolveInfo[_part.Key].CategoryNo, PartsResolveInfo[_part.Key].GUID);
+							if (_info == null) continue;
+
 							PartsResolveInfo[_part.Key] = _info.JsonClone() as ResolveInfo;
 							_part.Value.id = _info.LocalSlot;
 						}
-						else
-							PartsResolveInfo[_part.Key] = null;
 					}
 				}
 

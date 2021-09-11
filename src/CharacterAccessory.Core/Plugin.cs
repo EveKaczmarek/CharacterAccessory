@@ -7,6 +7,9 @@ using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
 
+using ExtensibleSaveFormat;
+
+using KKAPI;
 using KKAPI.Chara;
 using KKAPI.Maker;
 using KKAPI.Utilities;
@@ -16,9 +19,12 @@ namespace CharacterAccessory
 {
 	[BepInPlugin(GUID, Name, Version)]
 	[BepInDependency("madevil.JetPack", JetPack.Core.Version)]
-	[BepInDependency("marco.kkapi", "1.17")]
-	[BepInDependency("com.deathweasel.bepinex.materialeditor", "3.0")]
+	[BepInDependency(KoikatuAPI.GUID, KoikatuAPI.VersionConst)]
+	[BepInDependency(ExtendedSave.GUID, ExtendedSave.Version)]
+	[BepInDependency("com.deathweasel.bepinex.materialeditor", "3.1.4")]
+#if KK
 	[BepInDependency("com.joan6694.illusionplugins.moreaccessories", "1.1.0")]
+#endif
 	public partial class CharacterAccessory : BaseUnityPlugin
 	{
 		public const string GUID = "madevil.kk.ca";
@@ -27,7 +33,7 @@ namespace CharacterAccessory
 #else
 		public const string Name = "Character Accessory";
 #endif
-		public const string Version = "1.5.1.0";
+		public const string Version = "1.6.0.0";
 
 		internal static new ManualLogSource Logger;
 		internal static CharacterAccessory Instance;

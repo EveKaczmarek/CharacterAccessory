@@ -7,6 +7,8 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "CharacterAccessory.Core", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CharacterAccessory.KK", "src\CharacterAccessory.KK\CharacterAccessory.KK.csproj", "{32DEB8CE-4AF2-4458-AC87-359508C0ADAE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CharacterAccessory.KKS", "src\CharacterAccessory.KKS\CharacterAccessory.KKS.csproj", "{C856F9F4-0D2C-461D-A492-CCB6213CAFBE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,6 +19,10 @@ Global
 		{32DEB8CE-4AF2-4458-AC87-359508C0ADAE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{32DEB8CE-4AF2-4458-AC87-359508C0ADAE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{32DEB8CE-4AF2-4458-AC87-359508C0ADAE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C856F9F4-0D2C-461D-A492-CCB6213CAFBE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C856F9F4-0D2C-461D-A492-CCB6213CAFBE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C856F9F4-0D2C-461D-A492-CCB6213CAFBE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C856F9F4-0D2C-461D-A492-CCB6213CAFBE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

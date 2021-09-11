@@ -35,7 +35,7 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="ExtensibleSaveFormat, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\ExtensibleSaveFormat.Koikatu.16.3.0\lib\net35\ExtensibleSaveFormat.dll</HintPath>
+      <HintPath>..\..\packages\ExtensibleSaveFormat.Koikatu.16.3.1\lib\net35\ExtensibleSaveFormat.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="KKAPI, Version=1.17.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -43,7 +43,7 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="Sideloader, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Sideloader.Koikatu.16.3.0\lib\net35\Sideloader.dll</HintPath>
+      <HintPath>..\..\packages\Sideloader.Koikatu.16.3.1\lib\net35\Sideloader.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
@@ -80,6 +80,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Analyzer Include="..\..\packages\KoikatuCompatibilityAnalyzer.1.0.1\analyzers\dotnet\cs\KoikatuCompatibilityAnalyzer.dll" />
   </ItemGroup>
   <Import Project="..\CharacterAccessory.Core\CharacterAccessory.Core.projitems" Label="CharacterAccessory.Core" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -33,7 +33,7 @@ namespace CharacterAccessory
 #else
 		public const string Name = "Character Accessory";
 #endif
-		public const string Version = "1.6.0.0";
+		public const string Version = "1.7.0.0";
 
 		internal static new ManualLogSource Logger;
 		internal static CharacterAccessory Instance;
@@ -75,6 +75,7 @@ namespace CharacterAccessory
 			AccStateSyncSupport.Init();
 			DynamicBoneEditorSupport.Init();
 			AAAPKSupport.Init();
+			BendUrAccSupport.Init();
 
 			CumOnOverSupport.Init();
 			BonerStateSync.Init();

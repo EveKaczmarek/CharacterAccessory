@@ -33,6 +33,7 @@ namespace CharacterAccessory
 			internal AccStateSyncSupport.UrineBag AccStateSync;
 			internal DynamicBoneEditorSupport.UrineBag DynamicBoneEditor;
 			internal AAAPKSupport.UrineBag AAAPK;
+			internal BendUrAccSupport.UrineBag BendUrAcc;
 
 			internal Dictionary<int, ChaFileAccessory.PartsInfo> PartsInfo = new Dictionary<int, ChaFileAccessory.PartsInfo>();
 			internal Dictionary<int, ResolveInfo> PartsResolveInfo = new Dictionary<int, ResolveInfo>();
@@ -53,6 +54,7 @@ namespace CharacterAccessory
 				AccStateSync = new AccStateSyncSupport.UrineBag(ChaControl);
 				DynamicBoneEditor = new DynamicBoneEditorSupport.UrineBag(ChaControl);
 				AAAPK = new AAAPKSupport.UrineBag(ChaControl);
+				BendUrAcc = new BendUrAccSupport.UrineBag(ChaControl);
 
 				CurrentCoordinate.Subscribe(value => { OnCoordinateChanged(); });
 				base.Start();
@@ -130,7 +132,7 @@ namespace CharacterAccessory
 							}
 							else if (_name == "MaterialEditor")
 								Traverse.Create(this).Field(_name).Method("Load", new object[] { MessagePackSerializer.Deserialize<Dictionary<string, string>>((byte[]) loadedExtdata) }).GetValue();
-							else if ((_name == "MaterialRouter") || (_name == "DynamicBoneEditor") || (_name == "AAAPK"))
+							else if ((_name == "MaterialRouter") || (_name == "DynamicBoneEditor") || (_name == "AAAPK") || (_name == "BendUrAcc"))
 								Traverse.Create(this).Field(_name).Method("Load", new object[] { MessagePackSerializer.Deserialize<List<string>>((byte[]) loadedExtdata) }).GetValue();
 						}
 					}

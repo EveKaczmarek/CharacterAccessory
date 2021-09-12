@@ -15,6 +15,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Hooks.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Studio.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Support\Support.AAAPK.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Support\Support.BendUrAcc.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Support\Support.BonerStateSync.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Support\Support.CumOnOver.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Support\Support.MoreAccessories.cs" />

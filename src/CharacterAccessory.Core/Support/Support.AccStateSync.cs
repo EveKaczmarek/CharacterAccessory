@@ -7,6 +7,7 @@ using System.Reflection;
 using ParadoxNotion.Serialization;
 
 using BepInEx;
+using BepInEx.Logging;
 using HarmonyLib;
 
 using KKAPI.Chara;
@@ -248,21 +249,34 @@ namespace CharacterAccessory
 					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
 
 					Dictionary<int, int> _mapping = new Dictionary<int, int>();
-					Dictionary<int, bool> _newGroupCheck = new Dictionary<int, bool>();
 
 					foreach (string _guid in _guidMapping.Keys)
 					{
+						object _copy = null;
+						foreach (object x in _charaAccData["TriggerGroupList"] as IList)
+						{
+							if (Traverse.Create(x).Property("GUID").GetValue<string>() != _guid) continue;
+							_copy = x.JsonClone();
+						}
+
+						if (_copy == null)
+						{
+							DebugMsg(LogLevel.Error, $"[Restore] cannot find group setting for {_guid}");
+							continue;
+						}
+
+						Traverse.Create(_copy).Property("Coordinate").SetValue(_coordinateIndex);
+
 						object _group = GetTriggerGroupByGUID(_coordinateIndex, _guid);
 						int _kindOld = _guidMapping[_guid];
 						if (_group == null)
 						{
 							int _kindNew = GetNextGroupID(_coordinateIndex);
 							_mapping[_kindOld] = _kindNew;
-							//_guidMapping[_guid] = _kindNew; // shouldn't change this, keep old value for lookup
-							_newGroupCheck[_kindOld] = true;
+
+							Traverse.Create(_copy).Property("Kind").SetValue(_kindNew);
 						}
-						else
-							_newGroupCheck[_kindOld] = false;
+						(TriggerGroupList as IList).Add(_copy);
 					}
 
 					foreach (object x in _charaAccData["TriggerPropertyList"] as IList)
@@ -273,17 +287,6 @@ namespace CharacterAccessory
 						if (_mapping.ContainsKey(_kind))
 							Traverse.Create(_copy).Property("RefKind").SetValue(_mapping[_kind]);
 						(TriggerPropertyList as IList).Add(_copy);
-					}
-					foreach (object x in _charaAccData["TriggerGroupList"] as IList)
-					{
-						object _copy = x.JsonClone();
-						int _kind = Traverse.Create(_copy).Property("Kind").GetValue<int>();
-						if (!_newGroupCheck[_kind]) continue;
-
-						Traverse.Create(_copy).Property("Coordinate").SetValue(_coordinateIndex);
-						if (_mapping.ContainsKey(_kind))
-							Traverse.Create(_copy).Property("Kind").SetValue(_mapping[_kind]);
-						(TriggerGroupList as IList).Add(_copy);
 					}
 
 					RefreshCache();

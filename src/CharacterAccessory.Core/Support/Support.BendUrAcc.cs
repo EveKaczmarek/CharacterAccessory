@@ -32,6 +32,12 @@ namespace CharacterAccessory
 
 				if (_instance != null)
 				{
+					if (_pluginInfo.Metadata.Version.CompareTo(new Version("1.0.5.0")) < 0)
+					{
+						Logger.LogError($"BendUrAcc version {_pluginInfo.Metadata.Version} found, minimun version 1.0.5.0 is reqired");
+						return;
+					}
+
 					_installed = true;
 					SupportList.Add("BendUrAcc");
 
@@ -121,7 +127,6 @@ namespace CharacterAccessory
 						DebugMsg(LogLevel.Warning, $"[BendUrAcc][Backup][Slot: {_chaCtrl.GetFullName()}][{_traverse.Property("Slot").GetValue<int>()}]");
 #endif
 					}
-					DebugMsg(LogLevel.Warning, $"[BendUrAcc][Backup][Count: {_chaCtrl.GetFullName()}][{_charaAccData.Count}]");
 				}
 
 				internal void Restore()
@@ -144,7 +149,7 @@ namespace CharacterAccessory
 				{
 					if (!_installed) return;
 					foreach (int _slotIndex in ev.CopiedSlotIndexes)
-						Traverse.Create(_pluginCtrl).Method("CloneRule", new object[] { _slotIndex, _slotIndex, (int) ev.CopySource, (int) ev.CopyDestination }).GetValue();
+						Traverse.Create(_pluginCtrl).Method("CloneModifier", new object[] { _slotIndex, _slotIndex, (int) ev.CopySource, (int) ev.CopyDestination }).GetValue();
 					return;
 				}
 
@@ -153,14 +158,14 @@ namespace CharacterAccessory
 					if (!_installed) return;
 					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
 					//Traverse.Create(_pluginCtrl).Method("MoveRule", new object[] { ev.SourceSlotIndex, ev.DestinationSlotIndex, _coordinateIndex }).GetValue();
-					Traverse.Create(_pluginCtrl).Method("CloneRule", new object[] { ev.SourceSlotIndex, ev.DestinationSlotIndex, _coordinateIndex, _coordinateIndex }).GetValue();
-					Traverse.Create(_pluginCtrl).Method("RemoveRule", new object[] { _coordinateIndex, ev.SourceSlotIndex }).GetValue();
+					Traverse.Create(_pluginCtrl).Method("CloneModifier", new object[] { ev.SourceSlotIndex, ev.DestinationSlotIndex, _coordinateIndex, _coordinateIndex }).GetValue();
+					Traverse.Create(_pluginCtrl).Method("RemoveSlotModifier", new object[] { _coordinateIndex, ev.SourceSlotIndex }).GetValue();
 				}
 
 				internal void RemovePartsInfo(int _slotIndex)
 				{
 					if (!_installed) return;
-					Traverse.Create(_pluginCtrl).Method("RemoveRule", new object[] { _slotIndex }).GetValue();
+					Traverse.Create(_pluginCtrl).Method("RemoveSlotModifier", new object[] { _slotIndex }).GetValue();
 				}
 			}
 		}

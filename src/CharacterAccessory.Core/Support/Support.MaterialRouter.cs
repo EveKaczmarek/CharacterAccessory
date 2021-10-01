@@ -26,18 +26,24 @@ namespace CharacterAccessory
 
 			internal static void Init()
 			{
-				_instance = JetPack.Toolbox.GetPluginInstance("madevil.kk.mr");
+				BepInEx.Bootstrap.Chainloader.PluginInfos.TryGetValue("madevil.kk.mr", out PluginInfo _pluginInfo);
+				_instance = _pluginInfo?.Instance;
 
 				if (_instance != null)
 				{
+					if (_pluginInfo.Metadata.Version.CompareTo(new Version("2.0.0.0")) < 0)
+					{
+						Logger.LogError($"Material Router version {_pluginInfo.Metadata.Version} found, minimun version 2 is reqired");
+						return;
+					}
+
 					_installed = true;
 					SupportList.Add("MaterialRouter");
 
 					Assembly _assembly = _instance.GetType().Assembly;
 					_types["MaterialRouterController"] = _assembly.GetType("MaterialRouter.MaterialRouter+MaterialRouterController");
 					_types["RouteRule"] = _assembly.GetType("MaterialRouter.MaterialRouter+RouteRule");
-
-					_hooksInstance["General"].Patch(_types["MaterialRouterController"].GetMethod("BuildCheckList", AccessTools.all), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
+					_types["RouteRuleV1"] = _assembly.GetType("MaterialRouter.MaterialRouter+RouteRuleV1");
 				}
 			}
 
@@ -51,7 +57,6 @@ namespace CharacterAccessory
 			{
 				private readonly ChaControl _chaCtrl;
 				private readonly CharaCustomFunctionController _pluginCtrl;
-				//private object OutfitTriggers;
 				private readonly List<object> _charaAccData = new List<object>();
 
 				internal UrineBag(ChaControl ChaControl)
@@ -62,12 +67,9 @@ namespace CharacterAccessory
 					_pluginCtrl = GetController(_chaCtrl);
 				}
 
-				internal object GetExtDataLink(int _coordinateIndex)
+				internal object GetExtDataLink()
 				{
-					object OutfitTriggers = Traverse.Create(_pluginCtrl).Field("OutfitTriggers").GetValue();
-					if (OutfitTriggers == null)
-						return null;
-					return OutfitTriggers.RefTryGetValue(_coordinateIndex);
+					return Traverse.Create(_pluginCtrl).Field("RouteRuleList").GetValue();
 				}
 
 				internal void Reset()
@@ -91,8 +93,28 @@ namespace CharacterAccessory
 					_charaAccData?.Clear();
 					if (_json == null) return;
 
+					bool _migration = false;
+					Type _typeListRouteRuleV1 = typeof(List<>).MakeGenericType(_types["RouteRuleV1"]);
+					object _listRouteRuleV1 = Activator.CreateInstance(_typeListRouteRuleV1);
+
 					foreach (string x in _json)
-						_charaAccData.Add(JSONSerializer.Deserialize(_types["RouteRule"], x));
+					{
+						if (x.IndexOf("GameObjectPath") > -1)
+						{
+							_migration = true;
+							(_listRouteRuleV1 as IList).Add(JSONSerializer.Deserialize(_types["RouteRuleV1"], x));
+						}
+						else
+							_charaAccData.Add(JSONSerializer.Deserialize(_types["RouteRule"], x));
+					}
+
+					if (_migration)
+					{
+						DebugMsg(LogLevel.Warning, $"[MaterialRouterSupport][Migration]");
+						object _rules = Traverse.Create(_instance).Method("MigrationV1", new Type[] { _typeListRouteRuleV1 }, new object[] { _listRouteRuleV1 }).GetValue();
+						foreach (object x in _rules as IList)
+							_charaAccData.Add(x);
+					}
 				}
 
 				internal void Backup()
@@ -104,25 +126,22 @@ namespace CharacterAccessory
 					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
 					List<int> _slots = _controller.PartsInfo?.Keys?.ToList();
 
-					object _extdataLink = GetExtDataLink(_coordinateIndex);
+					object _extdataLink = GetExtDataLink();
 					if (_extdataLink == null) return;
 
 					int n = (_extdataLink as IList).Count;
 					for (int i = 0; i < n; i++)
 					{
-						object _rule = _extdataLink.RefElementAt(i);
-						string _path = Traverse.Create(_rule).Property("GameObjectPath").GetValue<string>();
-						if (!_path.Contains($"/ca_slot")) continue;
+						object x = _extdataLink.RefElementAt(i).JsonClone();
+						Traverse _traverse = Traverse.Create(x);
+						if (_traverse.Property("ObjectType").Method("ToString").GetValue<string>() != "Accessory") continue;
+						if (_traverse.Property("Coordinate").GetValue<int>() != _coordinateIndex) continue;
+						int _slotIndex = int.Parse(_traverse.Property("GameObjectName").GetValue<string>().Replace("ca_slot", ""));
+						if (!_slots.Contains(_slotIndex)) continue;
 
-						//DebugMsg(LogLevel.Warning, $"[MaterialRouter][Backup][{_chaCtrl.GetFullName()}][{_path}]");
-						foreach (int _slotIndex in _slots)
-						{
-							if (!_path.Contains($"/ca_slot{_slotIndex:00}/")) continue;
-							DebugMsg(LogLevel.Warning, $"[MaterialRouter][Backup][{_slotIndex}]");
-							_charaAccData.Add(_rule.JsonClone());
-						}
+						_traverse.Property("Coordinate").SetValue(-1);
+						(_charaAccData as IList).Add(x);
 					}
-					//DebugMsg(LogLevel.Warning, $"[MaterialRouter][Backup][{_chaCtrl.GetFullName()}][{_charaAccData.Count}]");
 				}
 
 				internal void Restore()
@@ -130,11 +149,21 @@ namespace CharacterAccessory
 					if (!_installed) return;
 
 					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
-					object _extdataLink = GetExtDataLink(_coordinateIndex);
+					object _extdataLink = GetExtDataLink();
 					if (_extdataLink == null) return;
 
 					for (int i = 0; i < _charaAccData.Count; i++)
-						Traverse.Create(_extdataLink).Method("Add", new object[] { _charaAccData[i].JsonClone() }).GetValue();
+					{
+						object x = _charaAccData[i].JsonClone();
+						Traverse.Create(x).Property("Coordinate").SetValue(_chaCtrl.fileStatus.coordinateType);
+						(_extdataLink as IList).Add(x);
+					}
+				}
+
+				internal string Report()
+				{
+					if (!_installed) return "";
+					return JSONSerializer.Serialize(_charaAccData.GetType(), _charaAccData, true);
 				}
 
 				internal void CopyPartsInfo(AccessoryCopyEventArgs ev)

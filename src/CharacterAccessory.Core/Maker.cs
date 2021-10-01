@@ -4,6 +4,8 @@ using System.Linq;
 using ChaCustom;
 using UniRx;
 
+using HarmonyLib;
+
 using KKAPI.Maker;
 using KKAPI.Maker.UI;
 using KKAPI.Maker.UI.Sidebar;
@@ -73,6 +75,19 @@ namespace CharacterAccessory
 				MakerToggleEnable.Value = _pluginCtrl.FunctionEnable;
 				MakerToggleAutoCopyToBlank.Value = _pluginCtrl.AutoCopyToBlank;
 			});
+
+			//Traverse.Create(typeof(BepInEx.Bootstrap.Chainloader).Assembly.GetType("BepInEx.ConsoleManager")).GetValue<BepInEx.Configuration.ConfigEntry<bool>>().Value;
+			bool _consoleActive = Traverse.Create(typeof(BepInEx.Bootstrap.Chainloader).Assembly.GetType("BepInEx.ConsoleManager")).Property("ConsoleActive").GetValue<bool>();
+
+			if (_consoleActive)
+			{
+				_args.AddControl(new MakerSeparator(_category, this));
+
+				_args.AddControl(new MakerButton("MaterialRouter", _category, this)).OnClick.AddListener(delegate
+				{
+					Logger.LogInfo("[MaterialRouter]\n" + _pluginCtrl.MaterialRouter.Report());
+				});
+			}
 		}
 	}
 }

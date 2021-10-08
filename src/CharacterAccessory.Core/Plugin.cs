@@ -21,13 +21,17 @@ namespace CharacterAccessory
 	[BepInDependency("madevil.JetPack", JetPack.Core.Version)]
 	[BepInDependency(KoikatuAPI.GUID, KoikatuAPI.VersionConst)]
 	[BepInDependency(ExtendedSave.GUID, ExtendedSave.Version)]
-	[BepInDependency("com.deathweasel.bepinex.materialeditor", "3.1.4")]
 #if KK
 	[BepInDependency("com.joan6694.illusionplugins.moreaccessories", "1.1.0")]
+	[BepInDependency("com.deathweasel.bepinex.materialeditor", "3.1.1")]
+#else
+	[BepInDependency("com.deathweasel.bepinex.materialeditor", "3.1.2")]
 #endif
 	[BepInIncompatibility("KK_ClothesLoadOption")]
+#if !DEBUG
 	[BepInIncompatibility("com.jim60105.kk.studiocoordinateloadoption")]
 	[BepInIncompatibility("com.jim60105.kk.coordinateloadoption")]
+#endif
 	public partial class CharacterAccessory : BaseUnityPlugin
 	{
 		public const string GUID = "madevil.kk.ca";
@@ -36,7 +40,7 @@ namespace CharacterAccessory
 #else
 		public const string Name = "Character Accessory";
 #endif
-		public const string Version = "1.8.0.0";
+		public const string Version = "1.8.1.0";
 
 		internal static new ManualLogSource Logger;
 		internal static CharacterAccessory Instance;
@@ -64,11 +68,26 @@ namespace CharacterAccessory
 
 		private void Start()
 		{
+#if KK && !DEBUG
+			if (JetPack.MoreAccessories.BuggyBootleg)
+			{
+				Logger.LogError($"Could not load {Name} {Version} because it is incompatible with MoreAccessories experimental build");
+				return;
+			}
+#endif
 			CordNames = Enum.GetNames(typeof(ChaFileDefine.CoordinateType)).ToList();
 			CharacterApi.RegisterExtraBehaviour<CharacterAccessoryController>(GUID);
 			_hooksInstance["General"] = Harmony.CreateAndPatchAll(typeof(Hooks));
 
 			MoreAccessoriesSupport.Init();
+			if (!MoreAccessoriesSupport._installed)
+			{
+#if KK
+				if (MoreAccessories.BuggyBootleg)
+					Logger.LogError($"Backward compatibility in BuggyBootleg MoreAccessories is disabled");
+				return;
+#endif
+			}
 #if DEBUG
 			MoreOutfitsSupport.Init();
 #endif

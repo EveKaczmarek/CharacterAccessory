@@ -7,6 +7,8 @@ using HarmonyLib;
 
 using KKAPI.Chara;
 
+using JetPack;
+
 namespace CharacterAccessory
 {
 	public partial class CharacterAccessory

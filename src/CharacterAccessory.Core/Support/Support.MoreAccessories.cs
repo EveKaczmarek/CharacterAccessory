@@ -22,17 +22,19 @@ namespace CharacterAccessory
 		internal static class MoreAccessoriesSupport
 		{
 			internal static BaseUnityPlugin _instance = null;
-			internal static bool _legacy = false;
+			internal static bool _installed = false;
+			internal static bool BuggyBootleg = false;
 
 			internal static void Init()
 			{
+				_installed = MoreAccessories.Installed;
+				if (!_installed) return;
+
 				_instance = MoreAccessories.Instance;
 				Assembly _assembly = _instance.GetType().Assembly;
-				_legacy = !MoreAccessories.NewVer;
-#if DEBUG
-				if (_legacy)
-					Logger.LogWarning($"MoreAccessories version {BepInEx.Bootstrap.Chainloader.PluginInfos.Values.FirstOrDefault(x => x.Instance == _instance).Metadata.Version} found, running in legacy mode");
-#endif
+				BuggyBootleg = MoreAccessories.BuggyBootleg;
+
+				if (BuggyBootleg) return;
 
 				_hooksInstance["General"].Patch(_instance.GetType().Assembly.GetType("MoreAccessoriesKOI.ChaControl_UpdateVisible_Patches").GetMethod("Postfix", AccessTools.all, null, new[] { typeof(ChaControl) }, null), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.ChaControl_UpdateVisible_Patches_Prefix)));
 

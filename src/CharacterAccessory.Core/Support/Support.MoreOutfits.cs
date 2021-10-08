@@ -50,14 +50,14 @@ namespace CharacterAccessory
 				if (!_installed) return;
 
 				_makerDropdownRef = null;
-				HooksInstance["Maker"].Patch(_instance.GetType().GetMethod("UpdateMakerUI", AccessTools.all), postfix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.UpdateMakerUI_Postfix)));
+				_hooksInstance["Maker"].Patch(_instance.GetType().Assembly.GetType("KK_Plugins.MoreOutfits.MakerUI").GetMethod("UpdateMakerUI", AccessTools.all), postfix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.UpdateMakerUI_Postfix)));
 			}
 
 			internal static void StudioInit()
 			{
 				if (!_installed) return;
 
-				HooksInstance["Studio"].Patch(_instance.GetType().GetMethod("InitializeStudioUI", AccessTools.all), postfix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.InitializeStudioUI_Postfix)));
+				_hooksInstance["Studio"].Patch(_instance.GetType().Assembly.GetType("KK_Plugins.MoreOutfits.StudioUI").GetMethod("InitializeStudioUI", AccessTools.all), postfix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.InitializeStudioUI_Postfix)));
 			}
 
 			internal static class Hooks
@@ -119,7 +119,7 @@ namespace CharacterAccessory
 
 				List<Dropdown.OptionData> _options = _studioDropdownRef.options;
 
-				ChaControl _chaCtrl = CharaStudio.CurOCIChar?.charInfo;
+				ChaControl _chaCtrl = JetPack.CharaStudio.CurOCIChar?.charInfo;
 
 				if (_chaCtrl == null)
 				{

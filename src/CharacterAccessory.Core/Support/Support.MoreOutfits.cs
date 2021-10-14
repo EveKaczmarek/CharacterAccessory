@@ -1,5 +1,4 @@
-﻿#if DEBUG
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
 using UnityEngine;
@@ -38,6 +37,11 @@ namespace CharacterAccessory
 			internal static Dictionary<int, string> CoordinateNames(CharaCustomFunctionController _pluginCtrl)
 			{
 				return Traverse.Create(_pluginCtrl).Field("CoordinateNames").GetValue<Dictionary<int, string>>();
+			}
+
+			internal static string GetCoodinateName(ChaControl _chaCtrl, int _coordinateIndex)
+			{
+				return JetPack.MoreOutfits.GetCoodinateName(_chaCtrl, _coordinateIndex);
 			}
 
 			internal static string GetCoodinateName(CharaCustomFunctionController _pluginCtrl, int _coordinateIndex)
@@ -80,23 +84,21 @@ namespace CharacterAccessory
 
 				if (!_installed)
 				{
-					MakerDropdownRef.SetValue(_referral);
+					_makerDropdownReferral.SetValue(_referral);
 					return;
 				}
-
-				CharaCustomFunctionController _pluginCtrl = GetController(_chaCtrl);
 
 				if (_makerDropdownRef == null)
 					_makerDropdownRef = GameObject.Find("tglCharaAcc")?.GetComponentInChildren<TMP_Dropdown>(true);
 				if (_makerDropdownRef == null)
 				{
-					Logger.LogError($"[BuildDropdownRef] failed to get dropdown component");
+					_logger.LogError($"[BuildDropdownRef] failed to get dropdown component");
 					return;
 				}
 
-				List<string> _coordinateList = CordNames.ToList();
+				List<string> _coordinateList = _cordNames.ToList();
 				for (int i = _coordinateList.Count; i < _chaCtrl.chaFile.coordinate.Length; i++)
-					_coordinateList.Add(GetCoodinateName(_pluginCtrl, i));
+					_coordinateList.Add(GetCoodinateName(_chaCtrl, i));
 				_coordinateList.Add("CharaAcc");
 
 				_makerDropdownRef.ClearOptions();
@@ -113,7 +115,7 @@ namespace CharacterAccessory
 					_studioDropdownRef = GameObject.Find("StudioScene/Canvas Main Menu/02_Manipulate/00_Chara/01_State/Viewport/Content/CharaAcc_Items_SAPI/CustomDropdown Referral/Dropdown")?.GetComponent<Dropdown>();
 				if (_studioDropdownRef == null)
 				{
-					Logger.LogError($"[BuildDropdownRef] failed to get dropdown component");
+					_logger.LogError($"[BuildDropdownRef] failed to get dropdown component");
 					return;
 				}
 
@@ -123,24 +125,21 @@ namespace CharacterAccessory
 
 				if (_chaCtrl == null)
 				{
-					_options.RemoveRange(CordNames.Count, _options.Count - CordNames.Count);
+					_options.RemoveRange(_cordNames.Count, _options.Count - _cordNames.Count);
 					_options.Add(new Dropdown.OptionData("CharaAcc"));
 					return;
 				}
 
-				CharaCustomFunctionController _pluginCtrl = GetController(_chaCtrl);
-
-				_options.RemoveRange(CordNames.Count, _options.Count - CordNames.Count);
-				for (int i = CordNames.Count; i < _chaCtrl.chaFile.coordinate.Length; i++)
+				_options.RemoveRange(_cordNames.Count, _options.Count - _cordNames.Count);
+				for (int i = _cordNames.Count; i < _chaCtrl.chaFile.coordinate.Length; i++)
 				{
-					if (i < CordNames.Count)
-						_options.Add(new Dropdown.OptionData(CordNames[i]));
+					if (i < _cordNames.Count)
+						_options.Add(new Dropdown.OptionData(_cordNames[i]));
 					else
-						_options.Add(new Dropdown.OptionData(GetCoodinateName(_pluginCtrl, i)));
+						_options.Add(new Dropdown.OptionData(GetCoodinateName(_chaCtrl, i)));
 				}
 				_options.Add(new Dropdown.OptionData("CharaAcc"));
 			}
 		}
 	}
 }
-#endif

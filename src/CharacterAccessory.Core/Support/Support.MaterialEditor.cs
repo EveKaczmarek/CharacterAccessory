@@ -34,7 +34,7 @@ namespace CharacterAccessory
 			{
 				BepInEx.Bootstrap.Chainloader.PluginInfos.TryGetValue("com.deathweasel.bepinex.materialeditor", out PluginInfo _pluginInfo);
 				_instance = _pluginInfo.Instance;
-				SupportList.Add("MaterialEditor");
+				_supportList.Add("MaterialEditor");
 
 				Assembly _assembly = _instance.GetType().Assembly;
 				_types["MaterialAPI"] = _assembly.GetType("MaterialEditorAPI.MaterialAPI");
@@ -44,7 +44,7 @@ namespace CharacterAccessory
 				_legacy = _pluginInfo.Metadata.Version.CompareTo(new Version("3.0")) < 0;
 
 				if (_legacy)
-					Logger.LogWarning($"Material Editor version {_pluginInfo.Metadata.Version} found, running in legacy mode");
+					_logger.LogWarning($"Material Editor version {_pluginInfo.Metadata.Version} found, running in legacy mode");
 				else
 					_containerKeys.Add("MaterialCopyList");
 
@@ -120,18 +120,15 @@ namespace CharacterAccessory
 						for (int i = 0; i < n; i++)
 						{
 							object x = _extdataLink[_key].RefElementAt(i).JsonClone(); // should I null cheack this?
+							Traverse _traverse = Traverse.Create(x);
 
-							if (Traverse.Create(x).Field("ObjectType").Method("ToString").GetValue<string>() != "Accessory") continue;
-							if (Traverse.Create(x).Field("CoordinateIndex").GetValue<int>() != _coordinateIndex) continue;
-							if (_slots.IndexOf(Traverse.Create(x).Field("Slot").GetValue<int>()) < 0) continue;
+							if (_traverse.Field("ObjectType").Method("ToString").GetValue<string>() != "Accessory") continue;
+							if (_traverse.Field("CoordinateIndex").GetValue<int>() != _coordinateIndex) continue;
+							if (_slots.IndexOf(_traverse.Field("Slot").GetValue<int>()) < 0) continue;
 
-							Traverse.Create(x).Field("CoordinateIndex").SetValue(-1);
-							Traverse.Create(_charaAccData[_key]).Method("Add", new object[] { x }).GetValue();
+							_traverse.Field("CoordinateIndex").SetValue(-1);
+							(_charaAccData[_key] as IList).Add(x);
 						}
-
-						DebugMsg(LogLevel.Warning, $"[MaterialEditor][Backup][{_chaCtrl.GetFullName()}][_charaAccData[{_key}] count: {Traverse.Create(_charaAccData[_key]).Property("Count").GetValue<int>()}]");
-						//string json = JSONSerializer.Serialize(_charaAccData[_key].GetType(), _charaAccData[_key], true);
-						//DebugMsg(LogLevel.Warning, $"{_charaAccData[_key].GetType()}\n" + json);
 					}
 
 					foreach (MaterialTextureProperty x in _charaAccData["MaterialTexturePropertyList"] as List<MaterialTextureProperty>)
@@ -165,28 +162,28 @@ namespace CharacterAccessory
 						for (int i = 0; i < n; i++)
 						{
 							object x = _charaAccData[_key].RefElementAt(i).JsonClone();
-							Traverse.Create(x).Field("CoordinateIndex").SetValue(_coordinateIndex);
+							Traverse _traverse = Traverse.Create(x);
+							_traverse.Field("CoordinateIndex").SetValue(_coordinateIndex);
 
 							if (_key == "MaterialTexturePropertyList")
 							{
-								int? TexID = Traverse.Create(x).Field("TexID").GetValue<int?>();
+								int? TexID = _traverse.Field("TexID").GetValue<int?>();
 								if (TexID != null)
-									Traverse.Create(x).Field("TexID").SetValue(_mapping[(int) TexID]);
+									_traverse.Field("TexID").SetValue(_mapping[(int) TexID]);
 							}
-
-							Traverse.Create(_extdataLink[_key]).Method("Add", new object[] { x }).GetValue();
+							(_extdataLink[_key] as IList).Add(x);
 						}
 					}
 				}
 
-				internal void CopyPartsInfo(AccessoryCopyEventArgs ev)
+				internal void CopyPartsInfo(AccessoryCopyEventArgs _args)
 				{
-					_pluginCtrl.AccessoriesCopiedEvent(null, ev);
+					_pluginCtrl.AccessoriesCopiedEvent(null, _args);
 				}
 
-				internal void TransferPartsInfo(AccessoryTransferEventArgs ev)
+				internal void TransferPartsInfo(AccessoryTransferEventArgs _args)
 				{
-					RemovePartsInfo(ev.DestinationSlotIndex);
+					RemovePartsInfo(_args.DestinationSlotIndex);
 
 					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
 					foreach (string _key in _containerKeys)
@@ -194,9 +191,9 @@ namespace CharacterAccessory
 						int n = Traverse.Create(_extdataLink[_key]).Property("Count").GetValue<int>();
 						for (int i = 0; i < n; i++)
 						{
-							object _copy = MoveSlot(_extdataLink[_key].RefElementAt(i).JsonClone(), _coordinateIndex, ev.SourceSlotIndex, ev.DestinationSlotIndex);
+							object _copy = MoveSlot(_extdataLink[_key].RefElementAt(i).JsonClone(), _coordinateIndex, _args.SourceSlotIndex, _args.DestinationSlotIndex);
 							if (_copy != null)
-								Traverse.Create(_extdataLink[_key]).Method("Add", new object[] { _copy }).GetValue();
+								(_extdataLink[_key] as IList).Add(_copy);
 						}
 					}
 				}

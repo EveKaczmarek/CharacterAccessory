@@ -42,7 +42,7 @@ namespace CharacterAccessory
 					MoreAccessoriesSupport.TransferPartsInfo(ChaControl, ev);
 					MoreAccessoriesSupport.RemovePartsInfo(ChaControl, CurrentCoordinateIndex, srcIndex);
 
-					foreach (string _name in SupportList)
+					foreach (string _name in _supportList)
 					{
 						Traverse.Create(this).Field(_name).Method("TransferPartsInfo", new object[] { ev }).GetValue();
 						Traverse.Create(this).Field(_name).Method("RemovePartsInfo", new object[] { srcIndex }).GetValue();

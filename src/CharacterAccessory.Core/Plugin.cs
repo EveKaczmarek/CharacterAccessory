@@ -13,7 +13,6 @@ using KKAPI;
 using KKAPI.Chara;
 using KKAPI.Maker;
 using KKAPI.Utilities;
-using JetPack;
 
 namespace CharacterAccessory
 {
@@ -40,10 +39,10 @@ namespace CharacterAccessory
 #else
 		public const string Name = "Character Accessory";
 #endif
-		public const string Version = "1.8.1.0";
+		public const string Version = "1.8.2.0";
 
-		internal static new ManualLogSource Logger;
-		internal static CharacterAccessory Instance;
+		internal static ManualLogSource _logger;
+		internal static CharacterAccessory _instance;
 		internal static Dictionary<string, Harmony> _hooksInstance = new Dictionary<string, Harmony>();
 
 		internal static ConfigEntry<bool> _cfgMakerMasterSwitch { get; set; }
@@ -52,13 +51,13 @@ namespace CharacterAccessory
 		internal static ConfigEntry<bool> _cfgMAHookUpdateStudioUI { get; set; }
 
 		internal const int PluginDataVersion = 3;
-		internal static List<string> SupportList = new List<string>();
-		internal static List<string> CordNames = new List<string>();
+		internal static List<string> _supportList = new List<string>();
+		internal static List<string> _cordNames = new List<string>();
 
 		private void Awake()
 		{
-			Logger = base.Logger;
-			Instance = this;
+			_logger = base.Logger;
+			_instance = this;
 
 			_cfgMakerMasterSwitch = Config.Bind("Maker", "Master Switch", true, new ConfigDescription("A quick switch on the sidebar that templary disable the function", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
 			_cfgStudioFallbackReload = Config.Bind("Studio", "Fallback Reload Mode", false, new ConfigDescription("Enable this if some plugins are having visual problem", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
@@ -71,11 +70,11 @@ namespace CharacterAccessory
 #if KK && !DEBUG
 			if (JetPack.MoreAccessories.BuggyBootleg)
 			{
-				Logger.LogError($"Could not load {Name} {Version} because it is incompatible with MoreAccessories experimental build");
+				_logger.LogError($"Could not load {Name} {Version} because it is incompatible with MoreAccessories experimental build");
 				return;
 			}
 #endif
-			CordNames = Enum.GetNames(typeof(ChaFileDefine.CoordinateType)).ToList();
+			_cordNames = Enum.GetNames(typeof(ChaFileDefine.CoordinateType)).ToList();
 			CharacterApi.RegisterExtraBehaviour<CharacterAccessoryController>(GUID);
 			_hooksInstance["General"] = Harmony.CreateAndPatchAll(typeof(Hooks));
 
@@ -83,14 +82,13 @@ namespace CharacterAccessory
 			if (!MoreAccessoriesSupport._installed)
 			{
 #if KK
-				if (MoreAccessories.BuggyBootleg)
-					Logger.LogError($"Backward compatibility in BuggyBootleg MoreAccessories is disabled");
+				if (JetPack.MoreAccessories.BuggyBootleg)
+					_logger.LogError($"Backward compatibility in BuggyBootleg MoreAccessories is disabled");
 				return;
 #endif
 			}
-#if DEBUG
+
 			MoreOutfitsSupport.Init();
-#endif
 			HairAccessoryCustomizerSupport.Init();
 			MaterialEditorSupport.Init();
 			MaterialRouterSupport.Init();
@@ -102,18 +100,17 @@ namespace CharacterAccessory
 			CumOnOverSupport.Init();
 			BonerStateSync.Init();
 
-			if (CharaStudio.Running)
+			if (JetPack.CharaStudio.Running)
 			{
-				CharaStudio.OnStudioLoaded += (_sender, _args) => RegisterStudioControls();
+				JetPack.CharaStudio.OnStudioLoaded += (_sender, _args) => RegisterStudioControls();
 			}
 			else
 			{
 				MakerAPI.MakerBaseLoaded += (_sender, _args) =>
 				{
 					_hooksInstance["Maker"] = Harmony.CreateAndPatchAll(typeof(HooksMaker));
-#if DEBUG
 					MoreOutfitsSupport.MakerInit();
-#endif
+
 					{
 						BaseUnityPlugin _instance = JetPack.Toolbox.GetPluginInstance("ClothingStateMenu");
 						if (_instance != null)
@@ -126,10 +123,10 @@ namespace CharacterAccessory
 					_hooksInstance["Maker"].UnpatchAll(_hooksInstance["Maker"].Id);
 					_hooksInstance["Maker"] = null;
 
-					MakerDropdownRef = null;
-					MakerToggleEnable = null;
-					MakerToggleAutoCopyToBlank = null;
-					SidebarToggleEnable = null;
+					_makerDropdownReferral = null;
+					_makerToggleEnable = null;
+					_makerToggleAutoCopyToBlank = null;
+					_sidebarToggleEnable = null;
 				};
 
 				MakerAPI.RegisterCustomSubCategories += RegisterCustomSubCategories;
@@ -139,9 +136,9 @@ namespace CharacterAccessory
 		internal static void DebugMsg(LogLevel LogLevel, string LogMsg)
 		{
 			if (_cfgDebugMode.Value)
-				Logger.Log(LogLevel, LogMsg);
+				_logger.Log(LogLevel, LogMsg);
 			else
-				Logger.Log(LogLevel.Debug, LogMsg);
+				_logger.Log(LogLevel.Debug, LogMsg);
 		}
 #if DEBUG
 		internal static string DisplayObjectInfo(object o)

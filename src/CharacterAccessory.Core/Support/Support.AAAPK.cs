@@ -8,7 +8,6 @@ using UniRx;
 using ParadoxNotion.Serialization;
 
 using BepInEx;
-using BepInEx.Logging;
 using HarmonyLib;
 
 using KKAPI.Chara;
@@ -36,12 +35,12 @@ namespace CharacterAccessory
 					_legacy = _pluginInfo.Metadata.Version.CompareTo(new Version("1.1.0.0")) < 0;
 					if (_legacy)
 					{
-						Logger.LogError($"AAAPK version {_pluginInfo.Metadata.Version} found, minimun version 1.1 is reqired");
+						_logger.LogError($"AAAPK version {_pluginInfo.Metadata.Version} found, minimun version 1.1 is reqired");
 						return;
 					}
 
 					_installed = true;
-					SupportList.Add("AAAPK");
+					_supportList.Add("AAAPK");
 
 					Assembly _assembly = _instance.GetType().Assembly;
 					_types["AAAPKController"] = _assembly.GetType("AAAPK.AAAPK+AAAPKController");
@@ -58,6 +57,7 @@ namespace CharacterAccessory
 				private readonly ChaControl _chaCtrl;
 				private readonly CharaCustomFunctionController _pluginCtrl;
 				private readonly List<object> _charaAccData = new List<object>();
+				private readonly Dictionary<string, Traverse> _traverses = new Dictionary<string, Traverse>();
 
 				internal UrineBag(ChaControl ChaControl)
 				{
@@ -65,47 +65,46 @@ namespace CharacterAccessory
 
 					_chaCtrl = ChaControl;
 					_pluginCtrl = GetController(_chaCtrl);
+					_traverses["pluginCtrl"] = Traverse.Create(_pluginCtrl);
 				}
 
 				internal object GetExtDataLink()
 				{
-					return Traverse.Create(_pluginCtrl).Field("ParentRuleList").GetValue();
+					return _traverses["pluginCtrl"].Field("ParentRuleList").GetValue();
 				}
 
 				internal void Reset()
 				{
 					if (!_installed) return;
+
 					_charaAccData.Clear();
 				}
 
 				internal List<string> Save()
 				{
 					if (!_installed) return null;
+
 					List<string> _json = new List<string>();
 					foreach (object x in _charaAccData)
 						_json.Add(JSONSerializer.Serialize(_types["ParentRule"], x));
-#if DEBUG
-					DebugMsg(LogLevel.Debug, $"[AAAPK][Save][{_chaCtrl.GetFullName()}]\n{JSONSerializer.Serialize(_types["ParentRule"], _json, true)}");
-#endif
 					return _json;
 				}
 
 				internal void Load(List<string> _json)
 				{
 					if (!_installed) return;
+
 					_charaAccData.Clear();
 					if (_json == null) return;
 
 					foreach (string x in _json)
 						_charaAccData.Add(JSONSerializer.Deserialize(_types["ParentRule"], x));
-#if DEBUG
-					DebugMsg(LogLevel.Debug, $"[AAAPK][Load][{_chaCtrl.GetFullName()}]\n{JSONSerializer.Serialize(_types["ParentRule"], _json, true)}");
-#endif
 				}
 
 				internal void Backup()
 				{
 					if (!_installed) return;
+
 					_charaAccData.Clear();
 
 					object _extdataLink = GetExtDataLink();
@@ -124,12 +123,8 @@ namespace CharacterAccessory
 						if (!_slots.Contains(_traverse.Property("Slot").GetValue<int>())) continue;
 
 						_traverse.Property("Coordinate").SetValue(-1);
-						Traverse.Create(_charaAccData).Method("Add", new object[] { x }).GetValue();
-#if DEBUG
-						DebugMsg(LogLevel.Warning, $"[AAAPK][Backup][Slot: {_chaCtrl.GetFullName()}][{_traverse.Property("Slot").GetValue<int>()}]");
-#endif
+						_charaAccData.Add(x);
 					}
-					DebugMsg(LogLevel.Warning, $"[AAAPK][Backup][Count: {_chaCtrl.GetFullName()}][{_charaAccData.Count}]");
 				}
 
 				internal void Restore()
@@ -144,29 +139,32 @@ namespace CharacterAccessory
 					{
 						object x = _charaAccData[i].JsonClone();
 						Traverse.Create(x).Property("Coordinate").SetValue(_coordinateIndex);
-						Traverse.Create(_extdataLink).Method("Add", new object[] { x }).GetValue();
+						(_extdataLink as IList).Add(x);
 					}
 				}
 
-				internal void CopyPartsInfo(AccessoryCopyEventArgs ev)
+				internal void CopyPartsInfo(AccessoryCopyEventArgs _args)
 				{
 					if (!_installed) return;
-					foreach (int _slotIndex in ev.CopiedSlotIndexes)
-						Traverse.Create(_pluginCtrl).Method("CloneRule", new object[] { _slotIndex, _slotIndex, (int) ev.CopySource, (int) ev.CopyDestination }).GetValue();
+
+					foreach (int _slotIndex in _args.CopiedSlotIndexes)
+						_traverses["pluginCtrl"].Method("CloneRule", new object[] { _slotIndex, _slotIndex, (int) _args.CopySource, (int) _args.CopyDestination }).GetValue();
 					return;
 				}
 
-				internal void TransferPartsInfo(AccessoryTransferEventArgs ev)
+				internal void TransferPartsInfo(AccessoryTransferEventArgs _args)
 				{
 					if (!_installed) return;
+
 					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
-					Traverse.Create(_pluginCtrl).Method("MoveRule", new object[] { ev.SourceSlotIndex, ev.DestinationSlotIndex, _coordinateIndex }).GetValue();
+					_traverses["pluginCtrl"].Method("MoveRule", new object[] { _args.SourceSlotIndex, _args.DestinationSlotIndex, _coordinateIndex }).GetValue();
 				}
 
 				internal void RemovePartsInfo(int _slotIndex)
 				{
 					if (!_installed) return;
-					Traverse.Create(_pluginCtrl).Method("RemoveRule", new object[] { _slotIndex }).GetValue();
+
+					_traverses["pluginCtrl"].Method("RemoveRule", new object[] { _slotIndex }).GetValue();
 				}
 			}
 		}

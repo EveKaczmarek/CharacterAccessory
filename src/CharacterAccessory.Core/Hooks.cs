@@ -1,13 +1,6 @@
 ﻿using System.Collections;
 
-using Studio;
-
-using BepInEx.Logging;
-using HarmonyLib;
-
 using KKAPI.Chara;
-
-using JetPack;
 
 namespace CharacterAccessory
 {
@@ -20,12 +13,7 @@ namespace CharacterAccessory
 				ChaControl _chaCtrl = __instance.ChaControl;
 				CharacterAccessoryController _pluginCtrl = GetController(_chaCtrl);
 				if (_pluginCtrl.DuringLoading)
-				{
-#if DEBUG
-					DebugMsg(LogLevel.Warning, $"[DuringLoading_Prefix][{_chaCtrl.GetFullName()}] await loading");
-#endif
 					return false;
-				}
 				return true;
 			}
 
@@ -35,9 +23,6 @@ namespace CharacterAccessory
 				CharacterAccessoryController _pluginCtrl = GetController(_chaCtrl);
 				if (_pluginCtrl.DuringLoading)
 				{
-#if DEBUG
-					DebugMsg(LogLevel.Warning, $"[DuringLoading_Prefix][{_chaCtrl.GetFullName()}] await loading");
-#endif
 					IEnumerator original = __result;
 					__result = new[] { original, YieldBreak() }.GetEnumerator();
 					return false;
@@ -57,12 +42,7 @@ namespace CharacterAccessory
 				if (_pluginCtrl == null) return true;
 
 				if (_pluginCtrl.DuringLoading)
-				{
-#if DEBUG
-					DebugMsg(LogLevel.Warning, $"[DuringLoading_Prefix][{_chaCtrl.GetFullName()}] await loading");
-#endif
 					return false;
-				}
 				return true;
 			}
 		}

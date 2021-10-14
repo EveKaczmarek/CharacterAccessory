@@ -75,7 +75,7 @@ namespace CharacterAccessory
 				ExtendedData.data.Add("MoreAccessoriesExtdata", MessagePackSerializer.Serialize(PartsInfo));
 				ExtendedData.data.Add("ResolutionInfoExtdata", MessagePackSerializer.Serialize(PartsResolveInfo));
 
-				foreach (string _name in SupportList)
+				foreach (string _name in _supportList)
 				{
 					var _extData = Traverse.Create(this).Field(_name).Method("Save").GetValue();
 					ExtendedData.data.Add($"{_name}Extdata", MessagePackSerializer.Serialize(_extData));
@@ -105,19 +105,19 @@ namespace CharacterAccessory
 				{
 					if (ExtendedData.version > PluginDataVersion)
 					{
-						Logger.Log(LogLevel.Error | LogLevel.Message, $"[OnReload] ExtendedData.version: {ExtendedData.version} is newer than your plugin");
+						_logger.Log(LogLevel.Error | LogLevel.Message, $"[OnReload] ExtendedData.version: {ExtendedData.version} is newer than your plugin");
 						base.OnReload(currentGameMode);
 						return;
 					}
 					else if (ExtendedData.version < PluginDataVersion)
-						Logger.Log(LogLevel.Info, $"[OnReload] Migrating from ver. {ExtendedData.version}");
+						_logger.Log(LogLevel.Info, $"[OnReload] Migrating from ver. {ExtendedData.version}");
 
 					if (ExtendedData.data.TryGetValue("MoreAccessoriesExtdata", out object loadedMoreAccessoriesExtdata) && loadedMoreAccessoriesExtdata != null)
 						PartsInfo = MessagePackSerializer.Deserialize<Dictionary<int, ChaFileAccessory.PartsInfo>>((byte[]) loadedMoreAccessoriesExtdata);
 					if (ExtendedData.data.TryGetValue("ResolutionInfoExtdata", out object loadedResolutionInfoExtdata) && loadedResolutionInfoExtdata != null)
 						PartsResolveInfo = MessagePackSerializer.Deserialize<Dictionary<int, ResolveInfo>>((byte[]) loadedResolutionInfoExtdata);
 
-					foreach (string _name in SupportList)
+					foreach (string _name in _supportList)
 					{
 						if (ExtendedData.data.TryGetValue($"{_name}Extdata", out object loadedExtdata) && loadedExtdata != null)
 						{
@@ -175,18 +175,14 @@ namespace CharacterAccessory
 
 				if (MakerAPI.InsideAndLoaded)
 				{
-					MakerToggleEnable.Value = FunctionEnable;
-					MakerToggleAutoCopyToBlank.Value = AutoCopyToBlank;
-#if DEBUG
+					_makerToggleEnable.Value = FunctionEnable;
+					_makerToggleAutoCopyToBlank.Value = AutoCopyToBlank;
 					MoreOutfitsSupport.BuildMakerDropdownRef();
-#endif
 				}
-#if DEBUG
+
 				if (CharaStudio.Running && CharaStudio.CurOCIChar?.charInfo == ChaControl)
-				{
 					MoreOutfitsSupport.BuildStudioDropdownRef();
-				}
-#endif
+
 				IEnumerator OnReloadCoroutine()
 				{
 					DebugMsg(LogLevel.Warning, $"[OnReloadCoroutine][{ChaControl.GetFullName()}] fired");
@@ -314,12 +310,9 @@ namespace CharacterAccessory
 
 			internal int GetReferralIndex()
 			{
-#if DEBUG
 				if (CharaStudio.Running && CharaStudio.CurOCIChar?.charInfo == ChaControl)
-				{
 					MoreOutfitsSupport.BuildStudioDropdownRef();
-				}
-#endif
+
 				int _index = ReferralIndex < 0 ? ChaControl.chaFile.coordinate.Length : ReferralIndex;
 				DebugMsg(LogLevel.Info, $"[GetReferralIndex][{ChaControl.GetFullName()}][_index: {_index}][ReferralIndex: {ReferralIndex}]");
 
@@ -357,10 +350,10 @@ namespace CharacterAccessory
 			internal string GetCordName() => GetCordName(CurrentCoordinateIndex);
 			internal string GetCordName(int CoordinateIndex)
 			{
-				if (CoordinateIndex < CordNames.Count)
-					return CordNames[CoordinateIndex];
+				if (CoordinateIndex < _cordNames.Count)
+					return _cordNames[CoordinateIndex];
 
-				return $"Extra {CoordinateIndex - CordNames.Count + 1}";
+				return $"Extra {CoordinateIndex - _cordNames.Count + 1}";
 			}
 		}
 	}

@@ -38,12 +38,12 @@ namespace CharacterAccessory
 					_legacy = _pluginInfo.Metadata.Version.CompareTo(new Version("4.0.0.0")) < 0;
 					if (_legacy)
 					{
-						Logger.LogError($"AccStateSync version {_pluginInfo.Metadata.Version} found, minimun version 4 is reqired");
+						_logger.LogError($"AccStateSync version {_pluginInfo.Metadata.Version} found, minimun version 4 is reqired");
 						return;
 					}
 
 					_installed = true;
-					SupportList.Add("AccStateSync");
+					_supportList.Add("AccStateSync");
 
 					Assembly _assembly = _instance.GetType().Assembly;
 					_types["AccStateSyncController"] = _assembly.GetType("AccStateSync.AccStateSync+AccStateSyncController");
@@ -66,12 +66,14 @@ namespace CharacterAccessory
 				private readonly ChaControl _chaCtrl;
 				private readonly CharaCustomFunctionController _pluginCtrl;
 				private readonly Dictionary<string, object> _charaAccData = new Dictionary<string, object>();
+				private readonly Dictionary<string, Traverse> _traverses = new Dictionary<string, Traverse>();
 
 				internal UrineBag(ChaControl ChaControl)
 				{
 					if (!_installed) return;
 					_chaCtrl = ChaControl;
 					_pluginCtrl = GetController(_chaCtrl);
+					_traverses["pluginCtrl"] = Traverse.Create(_pluginCtrl);
 
 					foreach (string _key in _containerKeys)
 					{
@@ -84,12 +86,12 @@ namespace CharacterAccessory
 
 				internal object GetTriggerPropertyList()
 				{
-					return Traverse.Create(_pluginCtrl).Field("TriggerPropertyList").GetValue();
+					return _traverses["pluginCtrl"].Field("TriggerPropertyList").GetValue();
 				}
 
 				internal object GetTriggerGroupList()
 				{
-					return Traverse.Create(_pluginCtrl).Field("TriggerGroupList").GetValue();
+					return _traverses["pluginCtrl"].Field("TriggerGroupList").GetValue();
 				}
 
 				internal void Reset()
@@ -178,8 +180,9 @@ namespace CharacterAccessory
 					for (int i = 0; i < (_charaAccData["TriggerGroupList"] as IList).Count; i++)
 					{
 						object x = _charaAccData["TriggerGroupList"].RefElementAt(i);
-						int _kind = Traverse.Create(x).Property("Kind").GetValue<int>();
-						string _guid = Traverse.Create(x).Property("GUID").GetValue<string>();
+						Traverse _traverse = Traverse.Create(x);
+						int _kind = _traverse.Property("Kind").GetValue<int>();
+						string _guid = _traverse.Property("GUID").GetValue<string>();
 						_guidMapping[_guid] = _kind;
 					}
 				}
@@ -197,8 +200,9 @@ namespace CharacterAccessory
 					for (int i = 0; i < (_charaAccData["TriggerGroupList"] as IList).Count; i++)
 					{
 						object x = _charaAccData["TriggerGroupList"].RefElementAt(i);
-						int _kind = Traverse.Create(x).Property("Kind").GetValue<int>();
-						string _guid = Traverse.Create(x).Property("GUID").GetValue<string>();
+						Traverse _traverse = Traverse.Create(x);
+						int _kind = _traverse.Property("Kind").GetValue<int>();
+						string _guid = _traverse.Property("GUID").GetValue<string>();
 						_guidMapping[_guid] = _kind;
 					}
 				}
@@ -209,8 +213,8 @@ namespace CharacterAccessory
 					Reset();
 					RefreshCache();
 
-					object TriggerPropertyList = Traverse.Create(_pluginCtrl).Field("_cachedCoordinatePropertyList").GetValue();
-					object TriggerGroupList = Traverse.Create(_pluginCtrl).Field("_cachedCoordinateGroupList").GetValue();
+					object TriggerPropertyList = _traverses["pluginCtrl"].Field("_cachedCoordinatePropertyList").GetValue();
+					object TriggerGroupList = _traverses["pluginCtrl"].Field("_cachedCoordinateGroupList").GetValue();
 					if (TriggerPropertyList == null) return;
 
 					CharacterAccessoryController _controller = CharacterAccessory.GetController(_chaCtrl);
@@ -219,21 +223,23 @@ namespace CharacterAccessory
 					for (int i = 0; i < (TriggerPropertyList as IList).Count; i++)
 					{
 						object x = TriggerPropertyList.RefElementAt(i).JsonClone();
-						if (!_slots.Contains(Traverse.Create(x).Property("Slot").GetValue<int>())) continue;
+						Traverse _traverse = Traverse.Create(x);
+						if (!_slots.Contains(_traverse.Property("Slot").GetValue<int>())) continue;
 
-						Traverse.Create(x).Property("Coordinate").SetValue(-1);
+						_traverse.Property("Coordinate").SetValue(-1);
 						(_charaAccData["TriggerPropertyList"] as IList).Add(x);
 					}
 
 					for (int i = 0; i < (TriggerGroupList as IList).Count; i++)
 					{
 						object x = TriggerGroupList.RefElementAt(i).JsonClone();
+						Traverse _traverse = Traverse.Create(x);
 
-						Traverse.Create(x).Property("Coordinate").SetValue(-1);
+						_traverse.Property("Coordinate").SetValue(-1);
 						(_charaAccData["TriggerGroupList"] as IList).Add(x);
 
-						int _kind = Traverse.Create(x).Property("Kind").GetValue<int>();
-						string _guid = Traverse.Create(x).Property("GUID").GetValue<string>();
+						int _kind = _traverse.Property("Kind").GetValue<int>();
+						string _guid = _traverse.Property("GUID").GetValue<string>();
 						_guidMapping[_guid] = _kind;
 					}
 				}
@@ -242,8 +248,8 @@ namespace CharacterAccessory
 				{
 					if (!_installed) return;
 
-					object TriggerPropertyList = Traverse.Create(_pluginCtrl).Field("TriggerPropertyList").GetValue();
-					object TriggerGroupList = Traverse.Create(_pluginCtrl).Field("TriggerGroupList").GetValue();
+					object TriggerPropertyList = _traverses["pluginCtrl"].Field("TriggerPropertyList").GetValue();
+					object TriggerGroupList = _traverses["pluginCtrl"].Field("TriggerGroupList").GetValue();
 					if (TriggerPropertyList == null) return;
 
 					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
@@ -265,7 +271,8 @@ namespace CharacterAccessory
 							continue;
 						}
 
-						Traverse.Create(_copy).Property("Coordinate").SetValue(_coordinateIndex);
+						Traverse _traverse = Traverse.Create(_copy);
+						_traverse.Property("Coordinate").SetValue(_coordinateIndex);
 
 						object _group = GetTriggerGroupByGUID(_coordinateIndex, _guid);
 						int _kindOld = _guidMapping[_guid];
@@ -274,7 +281,7 @@ namespace CharacterAccessory
 							int _kindNew = GetNextGroupID(_coordinateIndex);
 							_mapping[_kindOld] = _kindNew;
 
-							Traverse.Create(_copy).Property("Kind").SetValue(_kindNew);
+							_traverse.Property("Kind").SetValue(_kindNew);
 						}
 						(TriggerGroupList as IList).Add(_copy);
 					}
@@ -282,31 +289,32 @@ namespace CharacterAccessory
 					foreach (object x in _charaAccData["TriggerPropertyList"] as IList)
 					{
 						object _copy = x.JsonClone();
-						Traverse.Create(_copy).Property("Coordinate").SetValue(_coordinateIndex);
-						int _kind = Traverse.Create(_copy).Property("RefKind").GetValue<int>();
+						Traverse _traverse = Traverse.Create(_copy);
+						_traverse.Property("Coordinate").SetValue(_coordinateIndex);
+						int _kind = _traverse.Property("RefKind").GetValue<int>();
 						if (_mapping.ContainsKey(_kind))
-							Traverse.Create(_copy).Property("RefKind").SetValue(_mapping[_kind]);
+							_traverse.Property("RefKind").SetValue(_mapping[_kind]);
 						(TriggerPropertyList as IList).Add(_copy);
 					}
 
 					RefreshCache();
 				}
 
-				internal void CopyPartsInfo(AccessoryCopyEventArgs ev)
+				internal void CopyPartsInfo(AccessoryCopyEventArgs _args)
 				{
 					if (!_installed) return;
 
-					foreach (int _slotIndex in ev.CopiedSlotIndexes)
-						Traverse.Create(_pluginCtrl).Method("CloneSlotTriggerProperty", new object[] { _slotIndex, _slotIndex, (int) ev.CopySource, (int) ev.CopyDestination }).GetValue();
+					foreach (int _slotIndex in _args.CopiedSlotIndexes)
+						_traverses["pluginCtrl"].Method("CloneSlotTriggerProperty", new object[] { _slotIndex, _slotIndex, (int) _args.CopySource, (int) _args.CopyDestination }).GetValue();
 					return;
 				}
 
-				internal void TransferPartsInfo(AccessoryTransferEventArgs ev)
+				internal void TransferPartsInfo(AccessoryTransferEventArgs _args)
 				{
 					if (!_installed) return;
 
 					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
-					Traverse.Create(_pluginCtrl).Method("CloneSlotTriggerProperty", new object[] { ev.SourceSlotIndex, ev.DestinationSlotIndex, _coordinateIndex, _coordinateIndex }).GetValue();
+					_traverses["pluginCtrl"].Method("CloneSlotTriggerProperty", new object[] { _args.SourceSlotIndex, _args.DestinationSlotIndex, _coordinateIndex, _coordinateIndex }).GetValue();
 				}
 
 				internal void RemovePartsInfo(int _slotIndex) => RemovePartsInfo(_chaCtrl.fileStatus.coordinateType, _slotIndex);
@@ -314,49 +322,49 @@ namespace CharacterAccessory
 				{
 					if (!_installed) return;
 
-					Traverse.Create(_pluginCtrl).Method("RemoveSlotTriggerProperty", new object[] { _coordinateIndex, _slotIndex }).GetValue();
+					_traverses["pluginCtrl"].Method("RemoveSlotTriggerProperty", new object[] { _coordinateIndex, _slotIndex }).GetValue();
 				}
 
 				internal object GetTriggerGroupByGUID(int _coordinateIndex, string _guid)
 				{
 					if (!_installed) return -1;
-					return Traverse.Create(_pluginCtrl).Method("GetTriggerGroupByGUID", new object[] { _coordinateIndex, _guid }).GetValue();
+					return _traverses["pluginCtrl"].Method("GetTriggerGroupByGUID", new object[] { _coordinateIndex, _guid }).GetValue();
 				}
 
 				internal int GetNextGroupID(int _coordinateIndex)
 				{
 					if (!_installed) return -1;
-					return Traverse.Create(_pluginCtrl).Method("GetNextGroupID", new object[] { _coordinateIndex }).GetValue<int>();
+					return _traverses["pluginCtrl"].Method("GetNextGroupID", new object[] { _coordinateIndex }).GetValue<int>();
 				}
 
 				internal void PackGroupID(int _coordinateIndex)
 				{
 					if (!_installed) return;
-					Traverse.Create(_pluginCtrl).Method("PackGroupID", new object[] { _coordinateIndex }).GetValue();
+					_traverses["pluginCtrl"].Method("PackGroupID", new object[] { _coordinateIndex }).GetValue();
 				}
 
 				internal void RefreshCache()
 				{
 					if (!_installed) return;
-					Traverse.Create(_pluginCtrl).Method("RefreshCache").GetValue();
+					_traverses["pluginCtrl"].Method("RefreshCache").GetValue();
 				}
 
 				internal void InitCurOutfitTriggerInfo(string _caller)
 				{
 					if (!_installed) return;
-					Traverse.Create(_pluginCtrl).Method("InitCurOutfitTriggerInfo", new object[] { _caller }).GetValue();
+					_traverses["pluginCtrl"].Method("InitCurOutfitTriggerInfo", new object[] { _caller }).GetValue();
 				}
 
 				internal void SetAccessoryStateAll(bool _show = true)
 				{
 					if (!_installed) return;
-					Traverse.Create(_pluginCtrl).Method("SetAccessoryStateAll", new object[] { _show }).GetValue();
+					_traverses["pluginCtrl"].Method("SetAccessoryStateAll", new object[] { _show }).GetValue();
 				}
 
 				internal void SyncAllAccToggle(string _caller)
 				{
 					if (!_installed) return;
-					Traverse.Create(_pluginCtrl).Method("SyncAllAccToggle", new object[] { _caller }).GetValue();
+					_traverses["pluginCtrl"].Method("SyncAllAccToggle", new object[] { _caller }).GetValue();
 				}
 			}
 

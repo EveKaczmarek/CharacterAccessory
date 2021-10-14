@@ -38,7 +38,7 @@ namespace CharacterAccessory
 					}
 				}
 
-				foreach (string _name in SupportList)
+				foreach (string _name in _supportList)
 					Traverse.Create(this).Field(_name).Method("Backup").GetValue();
 			}
 
@@ -91,7 +91,7 @@ namespace CharacterAccessory
 				PartsInfo.Clear();
 				PartsResolveInfo.Clear();
 
-				foreach (string _name in SupportList)
+				foreach (string _name in _supportList)
 					Traverse.Create(this).Field(_name).Method("Reset").GetValue();
 			}
 
@@ -109,7 +109,7 @@ namespace CharacterAccessory
 				}
 				if (PartsInfo.Count == 0)
 				{
-					Logger.LogMessage($"Nothing to restore");
+					_logger.LogMessage($"Nothing to restore");
 					TaskUnlock();
 					return;
 				}
@@ -118,7 +118,7 @@ namespace CharacterAccessory
 				Dictionary<int, ChaFileAccessory.PartsInfo> RefUsedPartsInfo = MoreAccessoriesSupport.ListUsedPartsInfo(ChaControl, _coordinateIndex);
 				if (RefUsedPartsInfo.Count > 0 && RefUsedPartsInfo.Keys.Min() <= PartsInfo.Keys.Max())
 				{
-					Logger.LogMessage($"Error: parts overlap [RefUsedPartsInfo.Keys.Min(): {RefUsedPartsInfo.Keys.Min()}][PartsInfo.Keys.Max(): {PartsInfo.Keys.Max()}]");
+					_logger.LogMessage($"Error: parts overlap [RefUsedPartsInfo.Keys.Min(): {RefUsedPartsInfo.Keys.Min()}][PartsInfo.Keys.Max(): {PartsInfo.Keys.Max()}]");
 					TaskUnlock();
 					return;
 				}
@@ -136,7 +136,7 @@ namespace CharacterAccessory
 				}
 				else
 				{
-					foreach (string _name in SupportList)
+					foreach (string _name in _supportList)
 						Traverse.Create(this).Field(_name).Method("Restore").GetValue();
 
 					StartCoroutine(RefreshCoroutine());
@@ -157,7 +157,7 @@ namespace CharacterAccessory
 			{
 				DebugMsg(LogLevel.Warning, $"[RestorePluginSetting][{ChaControl.GetFullName()}] fired");
 
-				foreach (string _name in SupportList)
+				foreach (string _name in _supportList)
 					Traverse.Create(this).Field(_name).Method("Restore").GetValue();
 
 				StartCoroutine(RefreshCoroutine());

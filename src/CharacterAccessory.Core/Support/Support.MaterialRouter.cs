@@ -33,12 +33,12 @@ namespace CharacterAccessory
 				{
 					if (_pluginInfo.Metadata.Version.CompareTo(new Version("2.0.0.0")) < 0)
 					{
-						Logger.LogError($"Material Router version {_pluginInfo.Metadata.Version} found, minimun version 2 is reqired");
+						_logger.LogError($"Material Router version {_pluginInfo.Metadata.Version} found, minimun version 2 is reqired");
 						return;
 					}
 
 					_installed = true;
-					SupportList.Add("MaterialRouter");
+					_supportList.Add("MaterialRouter");
 
 					Assembly _assembly = _instance.GetType().Assembly;
 					_types["MaterialRouterController"] = _assembly.GetType("MaterialRouter.MaterialRouter+MaterialRouterController");
@@ -58,6 +58,7 @@ namespace CharacterAccessory
 				private readonly ChaControl _chaCtrl;
 				private readonly CharaCustomFunctionController _pluginCtrl;
 				private readonly List<object> _charaAccData = new List<object>();
+				private readonly Dictionary<string, Traverse> _traverses = new Dictionary<string, Traverse>();
 
 				internal UrineBag(ChaControl ChaControl)
 				{
@@ -65,22 +66,25 @@ namespace CharacterAccessory
 
 					_chaCtrl = ChaControl;
 					_pluginCtrl = GetController(_chaCtrl);
+					_traverses["pluginCtrl"] = Traverse.Create(_pluginCtrl);
 				}
 
 				internal object GetExtDataLink()
 				{
-					return Traverse.Create(_pluginCtrl).Field("RouteRuleList").GetValue();
+					return _traverses["pluginCtrl"].Field("RouteRuleList").GetValue();
 				}
 
 				internal void Reset()
 				{
 					if (!_installed) return;
+
 					_charaAccData.Clear();
 				}
 
 				internal List<string> Save()
 				{
 					if (!_installed) return null;
+
 					List<string> ContainerJson = new List<string>();
 					foreach (object x in _charaAccData)
 						ContainerJson.Add(JSONSerializer.Serialize(_types["RouteRule"], x));
@@ -90,6 +94,7 @@ namespace CharacterAccessory
 				internal void Load(List<string> _json)
 				{
 					if (!_installed) return;
+
 					_charaAccData?.Clear();
 					if (_json == null) return;
 
@@ -120,6 +125,7 @@ namespace CharacterAccessory
 				internal void Backup()
 				{
 					if (!_installed) return;
+
 					_charaAccData.Clear();
 
 					CharacterAccessoryController _controller = CharacterAccessory.GetController(_chaCtrl);
@@ -163,27 +169,31 @@ namespace CharacterAccessory
 				internal string Report()
 				{
 					if (!_installed) return "";
+
 					return JSONSerializer.Serialize(_charaAccData.GetType(), _charaAccData, true);
 				}
 
-				internal void CopyPartsInfo(AccessoryCopyEventArgs ev)
+				internal void CopyPartsInfo(AccessoryCopyEventArgs _args)
 				{
 					if (!_installed) return;
-					Traverse.Create(_pluginCtrl).Method("AccessoryCopyEvent", new object[] { ev }).GetValue();
+
+					_traverses["pluginCtrl"].Method("AccessoryCopyEvent", new object[] { _args }).GetValue();
 				}
 
-				internal void TransferPartsInfo(AccessoryTransferEventArgs ev)
+				internal void TransferPartsInfo(AccessoryTransferEventArgs _args)
 				{
 					if (!_installed) return;
+
 					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
-					Traverse.Create(_pluginCtrl).Method("TransferAccSlotInfo", new object[] { _coordinateIndex, ev }).GetValue();
+					_traverses["pluginCtrl"].Method("TransferAccSlotInfo", new object[] { _coordinateIndex, _args }).GetValue();
 				}
 
 				internal void RemovePartsInfo(int _slotIndex)
 				{
 					if (!_installed) return;
+
 					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
-					Traverse.Create(_pluginCtrl).Method("RemoveAccSlotInfo", new object[] { _coordinateIndex, _slotIndex }).GetValue();
+					_traverses["pluginCtrl"].Method("RemoveAccSlotInfo", new object[] { _coordinateIndex, _slotIndex }).GetValue();
 				}
 			}
 		}

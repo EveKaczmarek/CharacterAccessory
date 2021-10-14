@@ -8,7 +8,6 @@ using UniRx;
 using ParadoxNotion.Serialization;
 
 using BepInEx;
-using BepInEx.Logging;
 using HarmonyLib;
 
 using KKAPI.Maker;
@@ -33,7 +32,7 @@ namespace CharacterAccessory
 				if (_instance != null)
 				{
 					_installed = true;
-					SupportList.Add("DynamicBoneEditor");
+					_supportList.Add("DynamicBoneEditor");
 
 					Assembly _assembly = _instance.GetType().Assembly;
 					_types["CharaController"] = _assembly.GetType("KK_Plugins.DynamicBoneEditor.CharaController");
@@ -76,9 +75,6 @@ namespace CharacterAccessory
 					List<string> _json = new List<string>();
 					foreach (object x in _charaAccData)
 						_json.Add(JSONSerializer.Serialize(typeof(DynamicBoneData), x));
-#if DEBUG
-					DebugMsg(LogLevel.Debug, $"[DynamicBoneEditor][Save][{_chaCtrl.GetFullName()}]\n{JSONSerializer.Serialize(_json.GetType(), _json, true)}");
-#endif
 					return _json;
 				}
 
@@ -90,9 +86,6 @@ namespace CharacterAccessory
 
 					foreach (string x in _json)
 						_charaAccData.Add(JSONSerializer.Deserialize<DynamicBoneData>(x));
-#if DEBUG
-					DebugMsg(LogLevel.Debug, $"[DynamicBoneEditor][Load][{_chaCtrl.GetFullName()}]\n{JSONSerializer.Serialize(_json.GetType(), _json, true)}");
-#endif
 				}
 
 				internal void Backup()
@@ -114,17 +107,14 @@ namespace CharacterAccessory
 					for (int i = 0; i < n; i++)
 					{
 						DynamicBoneData x = _extdataLink.ElementAtOrDefault(i).JsonClone<DynamicBoneData>();
+						Traverse _traverse = Traverse.Create(x);
 
-						if (Traverse.Create(x).Field("CoordinateIndex").GetValue<int>() != _coordinateIndex) continue;
-						if (_slots.IndexOf(Traverse.Create(x).Field("Slot").GetValue<int>()) < 0) continue;
+						if (_traverse.Field("CoordinateIndex").GetValue<int>() != _coordinateIndex) continue;
+						if (_slots.IndexOf(_traverse.Field("Slot").GetValue<int>()) < 0) continue;
 
-						Traverse.Create(x).Field("CoordinateIndex").SetValue(-1);
-						Traverse.Create(_charaAccData).Method("Add", new object[] { x }).GetValue();
-#if DEBUG
-						DebugMsg(LogLevel.Warning, $"[DynamicBoneEditor][Backup][Slot: {_chaCtrl.GetFullName()}][{Traverse.Create(x).Field("Slot").GetValue<int>()}]");
-#endif
+						_traverse.Field("CoordinateIndex").SetValue(-1);
+						_charaAccData.Add(x);
 					}
-					DebugMsg(LogLevel.Warning, $"[DynamicBoneEditor][Backup][Count: {_chaCtrl.GetFullName()}][{_charaAccData.Count}]");
 				}
 
 				internal void Restore()
@@ -139,23 +129,23 @@ namespace CharacterAccessory
 					_extdataLink.AddRange(_temp);
 				}
 
-				internal void CopyPartsInfo(AccessoryCopyEventArgs ev)
+				internal void CopyPartsInfo(AccessoryCopyEventArgs _args)
 				{
 					if (!_installed) return;
-					_pluginCtrl.AccessoriesCopiedEvent(null, ev);
+					_pluginCtrl.AccessoriesCopiedEvent(null, _args);
 				}
 
-				internal void TransferPartsInfo(AccessoryTransferEventArgs ev)
+				internal void TransferPartsInfo(AccessoryTransferEventArgs _args)
 				{
 					if (!_installed) return;
 					List<DynamicBoneData> _extdataLink = GetExtDataLink();
 					if (_extdataLink == null) return;
 
-					RemovePartsInfo(ev.DestinationSlotIndex);
+					RemovePartsInfo(_args.DestinationSlotIndex);
 
 					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
-					List<DynamicBoneData> _temp = _extdataLink.Where(x => x.CoordinateIndex == _coordinateIndex && x.Slot == ev.SourceSlotIndex).ToList().JsonClone<List<DynamicBoneData>>();
-					_temp.ForEach(x => x.Slot = ev.DestinationSlotIndex);
+					List<DynamicBoneData> _temp = _extdataLink.Where(x => x.CoordinateIndex == _coordinateIndex && x.Slot == _args.SourceSlotIndex).ToList().JsonClone<List<DynamicBoneData>>();
+					_temp.ForEach(x => x.Slot = _args.DestinationSlotIndex);
 					_extdataLink.AddRange(_temp);
 				}
 

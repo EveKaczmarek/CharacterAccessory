@@ -1,15 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-#if DEBUG
-using System.Linq;
-#endif
+
 using MessagePack;
 
 using BepInEx;
-#if DEBUG
-using BepInEx.Logging;
-#endif
 using HarmonyLib;
 
 using KKAPI.Maker;
@@ -44,6 +39,7 @@ namespace CharacterAccessory
 
 			internal static void UpdateStudioUI(ChaControl _chaCtrl)
 			{
+				if (BuggyBootleg) return;
 				if (CharaStudio.CurOCIChar == null) return;
 				if (CharaStudio.CurOCIChar.charInfo != _chaCtrl) return;
 
@@ -58,12 +54,8 @@ namespace CharacterAccessory
 					if (_pluginCtrl == null) return true;
 
 					if (_pluginCtrl.DuringLoading)
-					{
-#if DEBUG
-						DebugMsg(LogLevel.Warning, $"[ChaControl_UpdateVisible_Patches_Prefix][{__0.GetFullName()}] await loading");
-#endif
 						return false;
-					}
+
 					return true;
 				}
 
@@ -80,12 +72,8 @@ namespace CharacterAccessory
 					}
 
 					if (!flag)
-					{
-#if DEBUG
-						DebugMsg(LogLevel.Warning, $"[MoreAccessories_UpdateStudioUI_Prefix][{CharaStudio.CurOCIChar.charInfo.GetFullName()}] await loading");
-#endif
 						return false;
-					}
+
 					return flag;
 				}
 			}

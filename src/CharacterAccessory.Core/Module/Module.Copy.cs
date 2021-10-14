@@ -56,7 +56,7 @@ namespace CharacterAccessory
 				}
 				else
 				{
-					foreach (string _name in SupportList)
+					foreach (string _name in _supportList)
 						Traverse.Create(this).Field(_name).Method("CopyPartsInfo", new object[] { ev }).GetValue();
 
 					ChaControl.StartCoroutine(RefreshCoroutine());
@@ -77,7 +77,7 @@ namespace CharacterAccessory
 			{
 				DebugMsg(LogLevel.Warning, $"[CopyPluginSetting][{ChaControl.GetFullName()}] fired");
 
-				foreach (string _name in SupportList)
+				foreach (string _name in _supportList)
 					Traverse.Create(this).Field(_name).Method("CopyPartsInfo", new object[] { ev }).GetValue();
 
 				ChaControl.StartCoroutine(RefreshCoroutine());

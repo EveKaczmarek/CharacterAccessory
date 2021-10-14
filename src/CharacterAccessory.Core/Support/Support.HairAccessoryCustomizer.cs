@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -31,7 +32,7 @@ namespace CharacterAccessory
 				if (_instance != null)
 				{
 					_installed = true;
-					SupportList.Add("HairAccessoryCustomizer");
+					_supportList.Add("HairAccessoryCustomizer");
 
 					Assembly _assembly = _instance.GetType().Assembly;
 					_types["HairAccessoryController"] = _assembly.GetType("KK_Plugins.HairAccessoryCustomizer+HairAccessoryController");
@@ -52,6 +53,7 @@ namespace CharacterAccessory
 				private readonly ChaControl _chaCtrl;
 				private readonly CharaCustomFunctionController _pluginCtrl;
 				private readonly Dictionary<int, object> _charaAccData = new Dictionary<int, object>();
+				private readonly Dictionary<string, Traverse> _traverses = new Dictionary<string, Traverse>();
 
 				internal UrineBag(ChaControl ChaControl)
 				{
@@ -59,11 +61,12 @@ namespace CharacterAccessory
 
 					_chaCtrl = ChaControl;
 					_pluginCtrl = GetController(_chaCtrl);
+					_traverses["pluginCtrl"] = Traverse.Create(_pluginCtrl);
 				}
 
 				internal object GetExtDataLink(int _coordinateIndex)
 				{
-					object HairAccessories = Traverse.Create(_pluginCtrl).Field("HairAccessories").GetValue();
+					object HairAccessories = _traverses["pluginCtrl"].Field("HairAccessories").GetValue();
 					if (HairAccessories == null)
 						return null;
 					return HairAccessories.RefTryGetValue(_coordinateIndex);
@@ -83,17 +86,14 @@ namespace CharacterAccessory
 					{
 						FakeHairAccessoryInfo _info = new FakeHairAccessoryInfo(x.Value);
 						_json[x.Key] = JSONSerializer.Serialize(typeof(FakeHairAccessoryInfo), _info);
-#if DEBUG
-						DebugMsg(LogLevel.Debug, $"[HairAccessoryCustomizer][Save][{_chaCtrl.GetFullName()}][{x.Key}]\n{DisplayObjectInfo(_info)}\n\n");
-#endif
 					}
-
 					return _json;
 				}
 
 				internal void Load(Dictionary<int, string> _json)
 				{
 					if (!_installed) return;
+
 					_charaAccData.Clear();
 					if (_json == null) return;
 
@@ -101,15 +101,13 @@ namespace CharacterAccessory
 					{
 						FakeHairAccessoryInfo _info = JSONSerializer.Deserialize<FakeHairAccessoryInfo>(x.Value);
 						_charaAccData[x.Key] = _info.Convert();
-#if DEBUG
-						DebugMsg(LogLevel.Debug, $"[HairAccessoryCustomizer][Load][{_chaCtrl.GetFullName()}][{x.Key}]\n{DisplayObjectInfo(_charaAccData[x.Key])}\n\n");
-#endif
 					}
 				}
 
 				internal void Backup()
 				{
 					if (!_installed) return;
+
 					_charaAccData.Clear();
 
 					int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
@@ -117,9 +115,6 @@ namespace CharacterAccessory
 					if (_extdataLink == null) return;
 
 					List<int> _slots = Traverse.Create(_extdataLink).Property("Keys").GetValue<ICollection<int>>().ToList();
-#if DEBUG
-					DebugMsg(LogLevel.Warning, $"[HairAccessoryCustomizer][Backup][keys: {string.Join(",", _slots.Select(x => x.ToString()).ToArray())}]");
-#endif
 					foreach (int _slotIndex in _slots)
 					{
 						if (!MoreAccessoriesSupport.IsHairAccessory(_chaCtrl, _slotIndex)) continue;
@@ -144,12 +139,9 @@ namespace CharacterAccessory
 						if (_extdataLink.RefTryGetValue(x.Key) != null)
 						{
 							DebugMsg(LogLevel.Warning, $"[HairAccessoryCustomizer][Restore][{_chaCtrl.GetFullName()}][{x.Key}] remove HairAccessoryInfo");
-							Traverse.Create(_extdataLink).Method("Remove", new object[] { x.Key }).GetValue();
+							(_extdataLink as IDictionary).Remove(x.Key);
 						}
-#if DEBUG
-						DebugMsg(LogLevel.Warning, $"[HairAccessoryCustomizer][Restore][{_chaCtrl.GetFullName()}][{x.Key}]\n{DisplayObjectInfo(x.Value)}");
-#endif
-						Traverse.Create(_extdataLink).Method("Add", new object[] { x.Key, x.Value.JsonClone() }).GetValue();
+						(_extdataLink as IDictionary).Add(x.Key, x.Value.JsonClone());
 					}
 				}
 
@@ -187,53 +179,29 @@ namespace CharacterAccessory
 				internal void UpdateAccessories(bool _updateHairInfo = true) // false would actually work
 				{
 					if (!_installed) return;
-					Traverse.Create(_pluginCtrl).Method("UpdateAccessories", new object[] { _updateHairInfo }).GetValue();
+
+					_traverses["pluginCtrl"].Method("UpdateAccessories", new object[] { _updateHairInfo }).GetValue();
 				}
-#if DEBUG
-				internal void DumpInfo(bool local)
-				{
-					if (local)
-					{
-						foreach (var x in _charaAccData)
-							Logger.LogWarning($"[{x.Key}]\n{DisplayObjectInfo(x.Value)}\n\n");
-					}
-					else
-					{
-						int _coordinateIndex = _chaCtrl.fileStatus.coordinateType;
 
-						List<int> _keys = Traverse.Create(_pluginCtrl).Field("HairAccessories").Property("Keys").GetValue<ICollection<int>>().ToList();
-						if (_keys.IndexOf(_coordinateIndex) < 0) return;
-
-						object _hairAccessoryInfos = Traverse.Create(_pluginCtrl).Field("HairAccessories").Method("get_Item", new object[] { _coordinateIndex }).GetValue();
-						if (_hairAccessoryInfos == null) return;
-
-						List<int> _slots = Traverse.Create(_hairAccessoryInfos).Property("Keys").GetValue<ICollection<int>>().ToList();
-						foreach (int _slotIndex in _slots)
-						{
-							object HairAccessoryInfo = _hairAccessoryInfos.RefTryGetValue(_slotIndex);
-							if (HairAccessoryInfo == null) continue;
-
-							Logger.LogWarning($"[{_slotIndex}]\n{DisplayObjectInfo(HairAccessoryInfo)}\n\n");
-						}
-					}
-				}
-#endif
-				internal void CopyPartsInfo(AccessoryCopyEventArgs ev)
+				internal void CopyPartsInfo(AccessoryCopyEventArgs _args)
 				{
 					if (!_installed) return;
-					Traverse.Create(_pluginCtrl).Method("CopyAccessoriesHandler", new object[] { ev }).GetValue();
+
+					_traverses["pluginCtrl"].Method("CopyAccessoriesHandler", new object[] { _args }).GetValue();
 				}
 
-				internal void TransferPartsInfo(AccessoryTransferEventArgs ev)
+				internal void TransferPartsInfo(AccessoryTransferEventArgs _args)
 				{
 					if (!_installed) return;
-					Traverse.Create(_pluginCtrl).Method("TransferAccessoriesHandler", new object[] { ev }).GetValue();
+
+					_traverses["pluginCtrl"].Method("TransferAccessoriesHandler", new object[] { _args }).GetValue();
 				}
 
 				internal void RemovePartsInfo(int _slotIndex)
 				{
 					if (!_installed) return;
-					Traverse.Create(_pluginCtrl).Method("RemoveHairAccessoryInfo", new object[] { _slotIndex }).GetValue();
+
+					_traverses["pluginCtrl"].Method("RemoveHairAccessoryInfo", new object[] { _slotIndex }).GetValue();
 				}
 			}
 		}

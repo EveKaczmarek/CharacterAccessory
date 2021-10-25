@@ -46,8 +46,10 @@ namespace CharacterAccessory
 
 			protected override void Start()
 			{
+				/*
 				if (KoikatuAPI.GetCurrentGameMode() == GameMode.MainGame)
 					return;
+				*/
 				HairAccessoryCustomizer = new HairAccessoryCustomizerSupport.UrineBag(ChaControl);
 				MaterialEditor = new MaterialEditorSupport.UrineBag(ChaControl);
 				MaterialRouter = new MaterialRouterSupport.UrineBag(ChaControl);
@@ -215,7 +217,10 @@ namespace CharacterAccessory
 				CoordinateLoadFlags _loadFlags = MakerAPI.GetCoordinateLoadFlags();
 				if (MakerAPI.InsideAndLoaded && _loadFlags != null && !_loadFlags.Accessories)
 					go = false;
-
+				/*
+				if (_cfgForceEnable.Value)
+					go = true;
+				*/
 				if (go)
 				{
 					TaskLock();

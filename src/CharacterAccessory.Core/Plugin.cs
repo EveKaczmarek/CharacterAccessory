@@ -39,7 +39,7 @@ namespace CharacterAccessory
 #else
 		public const string Name = "Character Accessory";
 #endif
-		public const string Version = "1.8.2.0";
+		public const string Version = "1.8.3.0";
 
 		internal static ManualLogSource _logger;
 		internal static CharacterAccessory _instance;
@@ -49,6 +49,7 @@ namespace CharacterAccessory
 		internal static ConfigEntry<bool> _cfgDebugMode { get; set; }
 		internal static ConfigEntry<bool> _cfgStudioFallbackReload { get; set; }
 		internal static ConfigEntry<bool> _cfgMAHookUpdateStudioUI { get; set; }
+		//internal static ConfigEntry<bool> _cfgForceEnable { get; set; }
 
 		internal const int PluginDataVersion = 3;
 		internal static List<string> _supportList = new List<string>();
@@ -62,6 +63,7 @@ namespace CharacterAccessory
 			_cfgMakerMasterSwitch = Config.Bind("Maker", "Master Switch", true, new ConfigDescription("A quick switch on the sidebar that templary disable the function", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
 			_cfgStudioFallbackReload = Config.Bind("Studio", "Fallback Reload Mode", false, new ConfigDescription("Enable this if some plugins are having visual problem", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
 			_cfgDebugMode = Config.Bind("Debug", "Debug Mode", false, new ConfigDescription("Showing debug messages in LogWarning level", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
+			//_cfgForceEnable = Config.Bind("Debug", "Force Enable Mode", false, new ConfigDescription("", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
 			_cfgMAHookUpdateStudioUI = Config.Bind("Hook", "MoreAccessories UpdateStudioUI", true, new ConfigDescription("Performance tweak, disable it if having issue on studio chara state panel update", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
 		}
 

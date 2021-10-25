@@ -138,7 +138,7 @@ namespace CharacterAccessory
 					{
 						if (_extdataLink.RefTryGetValue(x.Key) != null)
 						{
-							DebugMsg(LogLevel.Warning, $"[HairAccessoryCustomizer][Restore][{_chaCtrl.GetFullName()}][{x.Key}] remove HairAccessoryInfo");
+							//DebugMsg(LogLevel.Warning, $"[HairAccessoryCustomizer][Restore][{_chaCtrl.GetFullName()}][{x.Key}] remove HairAccessoryInfo");
 							(_extdataLink as IDictionary).Remove(x.Key);
 						}
 						(_extdataLink as IDictionary).Add(x.Key, x.Value.JsonClone());

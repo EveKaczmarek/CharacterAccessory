@@ -42,34 +42,34 @@ namespace CharacterAccessory
 					Traverse.Create(this).Field(_name).Method("Backup").GetValue();
 			}
 
-			internal static void MigrateData(ref ResolveInfo extResolve)
+			internal static void MigrateData(ref ResolveInfo _resolveInfo)
 			{
-				if (extResolve.GUID.IsNullOrWhiteSpace()) return;
+				if (_resolveInfo.GUID.IsNullOrWhiteSpace()) return;
 
-				List<MigrationInfo> migrationInfoList = UniversalAutoResolver.GetMigrationInfo(extResolve.GUID);
+				List<MigrationInfo> _listMigrationInfo = UniversalAutoResolver.GetMigrationInfo(_resolveInfo.GUID);
 
-				if (migrationInfoList.Any(x => x.MigrationType == MigrationType.StripAll))
+				if (_listMigrationInfo.Any(x => x.MigrationType == MigrationType.StripAll))
 				{
-					extResolve.GUID = "";
+					_resolveInfo.GUID = "";
 					return;
 				}
 
-				int slot = extResolve.Slot;
-				ChaListDefine.CategoryNo categoryNo = extResolve.CategoryNo;
-				foreach (MigrationInfo migrationInfo in migrationInfoList.Where(x => x.IDOld == slot && x.Category == categoryNo))
+				int _slotIndex = _resolveInfo.Slot;
+				ChaListDefine.CategoryNo _categoryNo = _resolveInfo.CategoryNo;
+				foreach (MigrationInfo _migrationInfo in _listMigrationInfo.Where(x => x.IDOld == _slotIndex && x.Category == _categoryNo))
 				{
-					if (Sideloader.Sideloader.GetManifest(migrationInfo.GUIDNew) != null)
+					if (Sideloader.Sideloader.GetManifest(_migrationInfo.GUIDNew) != null)
 					{
-						extResolve.GUID = migrationInfo.GUIDNew;
-						extResolve.Slot = migrationInfo.IDNew;
+						_resolveInfo.GUID = _migrationInfo.GUIDNew;
+						_resolveInfo.Slot = _migrationInfo.IDNew;
 						return;
 					}
 				}
 
-				foreach (MigrationInfo migrationInfo in migrationInfoList.Where(x => x.MigrationType == MigrationType.MigrateAll))
+				foreach (MigrationInfo _migrationInfo in _listMigrationInfo.Where(x => x.MigrationType == MigrationType.MigrateAll))
 				{
-					if (Sideloader.Sideloader.GetManifest(migrationInfo.GUIDNew) != null)
-						extResolve.GUID = migrationInfo.GUIDNew;
+					if (Sideloader.Sideloader.GetManifest(_migrationInfo.GUIDNew) != null)
+						_resolveInfo.GUID = _migrationInfo.GUIDNew;
 				}
 			}
 

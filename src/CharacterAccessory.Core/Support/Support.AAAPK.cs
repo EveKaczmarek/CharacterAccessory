@@ -105,6 +105,9 @@ namespace CharacterAccessory
 				{
 					if (!_installed) return;
 
+					UpdatePartsInfoList();
+					RefreshCache();
+
 					_charaAccData.Clear();
 
 					object _extdataLink = GetExtDataLink();
@@ -141,14 +144,29 @@ namespace CharacterAccessory
 						Traverse.Create(x).Property("Coordinate").SetValue(_coordinateIndex);
 						(_extdataLink as IList).Add(x);
 					}
+
+					UpdatePartsInfoList();
+					RefreshCache();
+				}
+
+				internal string Report()
+				{
+					if (!_installed) return "";
+
+					return JSONSerializer.Serialize(_charaAccData.GetType(), _charaAccData, true);
 				}
 
 				internal void CopyPartsInfo(AccessoryCopyEventArgs _args)
 				{
 					if (!_installed) return;
 
+					UpdatePartsInfoList();
+
 					foreach (int _slotIndex in _args.CopiedSlotIndexes)
 						_traverses["pluginCtrl"].Method("CloneRule", new object[] { _slotIndex, _slotIndex, (int) _args.CopySource, (int) _args.CopyDestination }).GetValue();
+
+					RefreshCache();
+
 					return;
 				}
 
@@ -165,6 +183,20 @@ namespace CharacterAccessory
 					if (!_installed) return;
 
 					_traverses["pluginCtrl"].Method("RemoveRule", new object[] { _slotIndex }).GetValue();
+				}
+
+				internal void UpdatePartsInfoList()
+				{
+					if (!_installed) return;
+
+					_traverses["pluginCtrl"].Method("UpdatePartsInfoList").GetValue();
+				}
+
+				internal void RefreshCache()
+				{
+					if (!_installed) return;
+
+					_traverses["pluginCtrl"].Method("RefreshCache").GetValue();
 				}
 			}
 		}

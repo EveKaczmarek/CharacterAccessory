@@ -145,6 +145,13 @@ namespace CharacterAccessory
 					}
 				}
 
+				internal string Report()
+				{
+					if (!_installed) return "";
+
+					return JSONSerializer.Serialize(_charaAccData.GetType(), _charaAccData, true);
+				}
+
 				internal class FakeHairAccessoryInfo
 				{
 					public bool HairGloss = false;

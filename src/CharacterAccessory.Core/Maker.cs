@@ -51,6 +51,7 @@ namespace CharacterAccessory
 				_pluginCtrl.SetReferralIndex(-1);
 				_pluginCtrl.FunctionEnable = true;
 				_makerToggleEnable.Value = _pluginCtrl.FunctionEnable;
+				_logger.LogMessage($"Character Accessory data saved");
 			});
 
 			_args.AddControl(new MakerButton("Restore", _category, this)).OnClick.AddListener(delegate
@@ -72,15 +73,48 @@ namespace CharacterAccessory
 				_pluginCtrl.SetReferralIndex(-1);
 				_makerToggleEnable.Value = _pluginCtrl.FunctionEnable;
 				_makerToggleAutoCopyToBlank.Value = _pluginCtrl.AutoCopyToBlank;
+				_logger.LogMessage($"Character Accessory data cleared");
 			});
 
 			if (JetPack.Game.ConsoleActive)
 			{
 				_args.AddControl(new MakerSeparator(_category, this));
 
-				_args.AddControl(new MakerButton("MaterialRouter", _category, this)).OnClick.AddListener(delegate
+				_args.AddControl(new MakerText("Diagnostic info", _category, this));
+
+				_args.AddControl(new MakerButton("AAAPK", _category, this)).OnClick.AddListener(delegate
 				{
-					_logger.LogInfo("[MaterialRouter]\n" + _pluginCtrl.MaterialRouter.Report());
+					_logger.LogInfo("[AAAPK]\n" + _pluginCtrl.AAAPK.Report());
+				});
+
+				_args.AddControl(new MakerButton("AccStateSync", _category, this)).OnClick.AddListener(delegate
+				{
+					_logger.LogInfo("[AccStateSync]\n" + _pluginCtrl.AccStateSync.Report());
+				});
+
+				_args.AddControl(new MakerButton("BendUrAcc", _category, this)).OnClick.AddListener(delegate
+				{
+					_logger.LogInfo("[BendUrAcc]\n" + _pluginCtrl.BendUrAcc.Report());
+				});
+
+				_args.AddControl(new MakerButton("Dynamic Bone Editor", _category, this)).OnClick.AddListener(delegate
+				{
+					_logger.LogInfo("[Dynamic Bone Editor]\n" + _pluginCtrl.DynamicBoneEditor.Report());
+				});
+
+				_args.AddControl(new MakerButton("Hair Accessory Customizer", _category, this)).OnClick.AddListener(delegate
+				{
+					_logger.LogInfo("[Hair Accessory Customizer]\n" + _pluginCtrl.HairAccessoryCustomizer.Report());
+				});
+
+				_args.AddControl(new MakerButton("Material Editor", _category, this)).OnClick.AddListener(delegate
+				{
+					_logger.LogInfo("[Material Editor]\n" + _pluginCtrl.MaterialEditor.Report());
+				});
+
+				_args.AddControl(new MakerButton("Material Router", _category, this)).OnClick.AddListener(delegate
+				{
+					_logger.LogInfo("[Material Router]\n" + _pluginCtrl.MaterialRouter.Report());
 				});
 			}
 		}

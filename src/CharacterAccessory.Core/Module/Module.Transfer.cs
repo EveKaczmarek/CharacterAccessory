@@ -34,20 +34,23 @@ namespace CharacterAccessory
 
 				for (int i = 0; i < QueueList.Count; i++)
 				{
-					int srcIndex = QueueList[i].SrcSlot;
-					int dstIndex = QueueList[i].DstSlot;
-					DebugMsg(LogLevel.Warning, $"[TransferPartsInfo][{ChaControl.GetFullName()}][{srcIndex}][{dstIndex}]");
-					AccessoryTransferEventArgs ev = new AccessoryTransferEventArgs(srcIndex, dstIndex);
+					int _srcIndex = QueueList[i].SrcSlot;
+					int _dstIndex = QueueList[i].DstSlot;
+					DebugMsg(LogLevel.Warning, $"[TransferPartsInfo][{ChaControl.GetFullName()}][{_srcIndex}][{_dstIndex}]");
+					AccessoryTransferEventArgs ev = new AccessoryTransferEventArgs(_srcIndex, _dstIndex);
 
 					MoreAccessoriesSupport.TransferPartsInfo(ChaControl, ev);
-					MoreAccessoriesSupport.RemovePartsInfo(ChaControl, CurrentCoordinateIndex, srcIndex);
+					MoreAccessoriesSupport.RemovePartsInfo(ChaControl, CurrentCoordinateIndex, _srcIndex);
 
 					foreach (string _name in _supportList)
 					{
 						Traverse.Create(this).Field(_name).Method("TransferPartsInfo", new object[] { ev }).GetValue();
-						Traverse.Create(this).Field(_name).Method("RemovePartsInfo", new object[] { srcIndex }).GetValue();
+						Traverse.Create(this).Field(_name).Method("RemovePartsInfo", new object[] { _srcIndex }).GetValue();
 					}
 				}
+
+				AAAPK.UpdatePartsInfoList();
+				AAAPK.RefreshCache();
 
 				if (ReferralIndex > -1 && ReferralIndex < ChaControl.chaFile.coordinate.Length)
 					CopyPartsInfo();

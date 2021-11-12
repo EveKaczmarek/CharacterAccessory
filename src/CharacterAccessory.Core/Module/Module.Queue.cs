@@ -80,26 +80,26 @@ namespace CharacterAccessory
 					return;
 				}
 
-				int RefLastNotEmpty = -1;
+				int _refLastUsedSlot = -1;
 
 				if (ReferralIndex > -1 && ReferralIndex < ChaControl.chaFile.coordinate.Length)
 				{
-					Dictionary<int, ChaFileAccessory.PartsInfo> RefUsedPartsInfo = MoreAccessoriesSupport.ListUsedPartsInfo(ChaControl, ReferralIndex);
-					RefLastNotEmpty = (RefUsedPartsInfo.Count == 0) ? -1 : RefUsedPartsInfo.Keys.Max();
+					Dictionary<int, ChaFileAccessory.PartsInfo> _refUsedParts = MoreAccessoriesSupport.ListUsedPartsInfo(ChaControl, ReferralIndex);
+					_refLastUsedSlot = (_refUsedParts.Count == 0) ? -1 : _refUsedParts.Keys.Max();
 				}
 				else if (ReferralIndex  == -1)
-					RefLastNotEmpty = (PartsInfo.Count == 0) ? -1 : PartsInfo.Keys.Max();
+					_refLastUsedSlot = (PartsInfo.Count == 0) ? -1 : PartsInfo.Keys.Max();
 
-				DebugMsg(LogLevel.Warning, $"[PrepareQueue][{ChaControl.GetFullName()}][ReferralIndex: {ReferralIndex}][SrcLastNotEmpty: Slot{RefLastNotEmpty + 1:00}]");
+				DebugMsg(LogLevel.Warning, $"[PrepareQueue][{ChaControl.GetFullName()}][ReferralIndex: {ReferralIndex}][SrcLastNotEmpty: Slot{_refLastUsedSlot + 1:00}]");
 
-				if (RefLastNotEmpty < 0)
+				if (_refLastUsedSlot < 0)
 				{
 					TaskUnlock();
 					return;
 				}
 
-				Dictionary<int, ChaFileAccessory.PartsInfo> CurUsedPartsInfo = MoreAccessoriesSupport.ListUsedPartsInfo(ChaControl, CurrentCoordinateIndex);
-				if (CurUsedPartsInfo.Count == 0)
+				Dictionary<int, ChaFileAccessory.PartsInfo> _curUsedParts = MoreAccessoriesSupport.ListUsedPartsInfo(ChaControl, CurrentCoordinateIndex);
+				if (_curUsedParts.Count == 0)
 				{
 					if (ReferralIndex > -1 && ReferralIndex < ChaControl.chaFile.coordinate.Length)
 						CopyPartsInfo();
@@ -108,33 +108,33 @@ namespace CharacterAccessory
 					return;
 				}
 
-				int ToAdd = 0;
-				int shift = 0;
-				int CurFirstNotEmpty = CurUsedPartsInfo.Keys.Min();
-				int CurLastNotEmpty = CurUsedPartsInfo.Keys.Max();
+				int _toAdd = 0;
+				int _shift = 0;
+				int _curFirstUsedSlot = _curUsedParts.Keys.Min();
+				int _curLastUsedSlot = _curUsedParts.Keys.Max();
 
-				List<int> UsedParts = CurUsedPartsInfo.Keys.ToList();
-				List<int> UsedPartsRev = new List<int>();
-				UsedPartsRev.AddRange(UsedParts);
-				UsedPartsRev.Reverse();
-				DebugMsg(LogLevel.Warning, $"[PrepareQueue][{ChaControl.GetFullName()}][CurrentCoordinateIndex: {CurrentCoordinateIndex}][CurFirstNotEmpty: Slot{CurFirstNotEmpty + 1:00}][CurLastNotEmpty: Slot{CurLastNotEmpty + 1:00}]");
+				List<int> _keysUsedParts = _curUsedParts.Keys.ToList();
+				List<int> _keysUsedPartsRev = new List<int>();
+				_keysUsedPartsRev.AddRange(_keysUsedParts);
+				_keysUsedPartsRev.Reverse();
+				DebugMsg(LogLevel.Warning, $"[PrepareQueue][{ChaControl.GetFullName()}][CurrentCoordinateIndex: {CurrentCoordinateIndex}][CurFirstNotEmpty: Slot{_curFirstUsedSlot + 1:00}][CurLastNotEmpty: Slot{_curLastUsedSlot + 1:00}]");
 
-				if (CurFirstNotEmpty <= RefLastNotEmpty)
+				if (_curFirstUsedSlot <= _refLastUsedSlot)
 				{
-					shift = RefLastNotEmpty - CurFirstNotEmpty + 1;
-					int NewMaxIndex = CurLastNotEmpty + shift;
-					ToAdd = NewMaxIndex - MoreAccessoriesSupport.GetPartsCount(ChaControl, CurrentCoordinateIndex);
+					_shift = _refLastUsedSlot - _curFirstUsedSlot + 1;
+					int _newMaxIndex = _curLastUsedSlot + _shift;
+					_toAdd = _newMaxIndex - MoreAccessoriesSupport.GetPartsCount(ChaControl, CurrentCoordinateIndex);
 				}
 
-				if (shift > 0)
+				if (_shift > 0)
 				{
-					foreach (int _slot in UsedPartsRev)
-						QueueList.Add(new QueueItem(_slot, _slot + shift));
+					foreach (int _slot in _keysUsedPartsRev)
+						QueueList.Add(new QueueItem(_slot, _slot + _shift));
 				}
 
-				if (ToAdd > 0)
+				if (_toAdd > 0)
 				{
-					MoreAccessoriesSupport.CheckAndPadPartInfo(ChaControl, CurrentCoordinateIndex, CurLastNotEmpty + shift);
+					MoreAccessoriesSupport.CheckAndPadPartInfo(ChaControl, CurrentCoordinateIndex, _curLastUsedSlot + _shift);
 					StartCoroutine(TransferPartsInfoCoroutine());
 				}
 				else

@@ -141,6 +141,13 @@ namespace CharacterAccessory
 					}
 				}
 
+				internal string Report()
+				{
+					if (!_installed) return "";
+
+					return JSONSerializer.Serialize(_charaAccData.GetType(), _charaAccData, true);
+				}
+
 				internal void CopyPartsInfo(AccessoryCopyEventArgs _args)
 				{
 					if (!_installed) return;

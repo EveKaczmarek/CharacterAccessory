@@ -176,6 +176,11 @@ namespace CharacterAccessory
 					}
 				}
 
+				internal string Report()
+				{
+					return JSONSerializer.Serialize(_charaAccData.GetType(), _charaAccData, true);
+				}
+
 				internal void CopyPartsInfo(AccessoryCopyEventArgs _args)
 				{
 					_pluginCtrl.AccessoriesCopiedEvent(null, _args);

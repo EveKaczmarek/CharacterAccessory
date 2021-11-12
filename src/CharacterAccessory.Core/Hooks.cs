@@ -12,6 +12,8 @@ namespace CharacterAccessory
 			{
 				ChaControl _chaCtrl = __instance.ChaControl;
 				CharacterAccessoryController _pluginCtrl = GetController(_chaCtrl);
+				if (_pluginCtrl == null) return true;
+
 				if (_pluginCtrl.DuringLoading)
 					return false;
 				return true;
@@ -21,6 +23,8 @@ namespace CharacterAccessory
 			{
 				ChaControl _chaCtrl = __instance.ChaControl;
 				CharacterAccessoryController _pluginCtrl = GetController(_chaCtrl);
+				if (_pluginCtrl == null) return true;
+
 				if (_pluginCtrl.DuringLoading)
 				{
 					IEnumerator original = __result;

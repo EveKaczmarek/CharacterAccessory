@@ -52,6 +52,8 @@ namespace CharacterAccessory
 
 					foreach (object _key in Enum.GetValues(typeof(ChaAccessoryDefine.AccessoryParentKey)))
 						_accParentNames[_key.ToString()] = ChaAccessoryDefine.dictAccessoryParent[(int) _key];
+
+					_hooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("SetAccessoryStateAll", AccessTools.all), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
 				}
 			}
 
@@ -300,6 +302,13 @@ namespace CharacterAccessory
 					RefreshCache();
 				}
 
+				internal string Report()
+				{
+					if (!_installed) return "";
+
+					return JSONSerializer.Serialize(_charaAccData.GetType(), _charaAccData, true);
+				}
+
 				internal void CopyPartsInfo(AccessoryCopyEventArgs _args)
 				{
 					if (!_installed) return;
@@ -328,42 +337,49 @@ namespace CharacterAccessory
 				internal object GetTriggerGroupByGUID(int _coordinateIndex, string _guid)
 				{
 					if (!_installed) return -1;
+
 					return _traverses["pluginCtrl"].Method("GetTriggerGroupByGUID", new object[] { _coordinateIndex, _guid }).GetValue();
 				}
 
 				internal int GetNextGroupID(int _coordinateIndex)
 				{
 					if (!_installed) return -1;
+
 					return _traverses["pluginCtrl"].Method("GetNextGroupID", new object[] { _coordinateIndex }).GetValue<int>();
 				}
 
 				internal void PackGroupID(int _coordinateIndex)
 				{
 					if (!_installed) return;
+
 					_traverses["pluginCtrl"].Method("PackGroupID", new object[] { _coordinateIndex }).GetValue();
 				}
 
 				internal void RefreshCache()
 				{
 					if (!_installed) return;
+
 					_traverses["pluginCtrl"].Method("RefreshCache").GetValue();
 				}
 
 				internal void InitCurOutfitTriggerInfo(string _caller)
 				{
 					if (!_installed) return;
+
 					_traverses["pluginCtrl"].Method("InitCurOutfitTriggerInfo", new object[] { _caller }).GetValue();
 				}
 
 				internal void SetAccessoryStateAll(bool _show = true)
 				{
 					if (!_installed) return;
+
 					_traverses["pluginCtrl"].Method("SetAccessoryStateAll", new object[] { _show }).GetValue();
 				}
 
 				internal void SyncAllAccToggle(string _caller)
 				{
 					if (!_installed) return;
+
 					_traverses["pluginCtrl"].Method("SyncAllAccToggle", new object[] { _caller }).GetValue();
 				}
 			}

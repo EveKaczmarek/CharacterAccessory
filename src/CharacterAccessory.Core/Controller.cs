@@ -46,10 +46,6 @@ namespace CharacterAccessory
 
 			protected override void Start()
 			{
-				/*
-				if (KoikatuAPI.GetCurrentGameMode() == GameMode.MainGame)
-					return;
-				*/
 				HairAccessoryCustomizer = new HairAccessoryCustomizerSupport.UrineBag(ChaControl);
 				MaterialEditor = new MaterialEditorSupport.UrineBag(ChaControl);
 				MaterialRouter = new MaterialRouterSupport.UrineBag(ChaControl);
@@ -58,14 +54,7 @@ namespace CharacterAccessory
 				AAAPK = new AAAPKSupport.UrineBag(ChaControl);
 				BendUrAcc = new BendUrAccSupport.UrineBag(ChaControl);
 
-				CurrentCoordinate.Subscribe(value => { OnCoordinateChanged(); });
 				base.Start();
-			}
-
-			private void OnCoordinateChanged()
-			{
-				TaskUnlock();
-				AutoCopyCheck();
 			}
 
 			protected override void OnCardBeingSaved(GameMode currentGameMode)
@@ -346,10 +335,10 @@ namespace CharacterAccessory
 
 			internal void BigReload()
 			{
-				string CardPath = Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(BepInEx.Paths.ExecutablePath) + "_CA.png");
-				using (FileStream fileStream = new FileStream(CardPath, FileMode.Create, FileAccess.Write))
-					ChaControl.chaFile.SaveCharaFile(fileStream, true);
-				Studio.Studio.Instance.dicInfo.Values.OfType<OCIChar>().FirstOrDefault(x => x.charInfo == ChaControl).ChangeChara(CardPath);
+				string _path = Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(BepInEx.Paths.ExecutablePath) + "_CharacterAccessory.png");
+				using (FileStream _fileStream = new FileStream(_path, FileMode.Create, FileAccess.Write))
+					ChaControl.chaFile.SaveCharaFile(_fileStream, true);
+				Studio.Studio.Instance.dicInfo.Values.OfType<OCIChar>().FirstOrDefault(x => x.charInfo == ChaControl).ChangeChara(_path);
 			}
 
 			internal string GetCordName() => GetCordName(CurrentCoordinateIndex);

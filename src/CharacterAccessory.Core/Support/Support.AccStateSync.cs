@@ -54,6 +54,10 @@ namespace CharacterAccessory
 						_accParentNames[_key.ToString()] = ChaAccessoryDefine.dictAccessoryParent[(int) _key];
 
 					_hooksInstance["General"].Patch(_types["AccStateSyncController"].GetMethod("SetAccessoryStateAll", AccessTools.all), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
+
+					MethodInfo CheckSecondary = _types["AccStateSyncController"].GetMethod("CheckSecondary", AccessTools.all);
+					if (CheckSecondary != null)
+						_hooksInstance["General"].Patch(CheckSecondary, prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.DuringLoading_Prefix)));
 				}
 			}
 

@@ -39,7 +39,7 @@ namespace CharacterAccessory
 #else
 		public const string Name = "Character Accessory";
 #endif
-		public const string Version = "1.9.0.0";
+		public const string Version = "1.9.2.0";
 
 		internal static ManualLogSource _logger;
 		internal static CharacterAccessory _instance;
@@ -146,6 +146,32 @@ namespace CharacterAccessory
 				else if (_args.State == "Postfix")
 					_pluginCtrl.AutoCopyCheck();
 			};
+#if KKS
+			ExtendedSave.CardBeingImported += (_importedExtData, _coordinateMapping) =>
+			{
+				int ReferralIndex = -1;
+				if (_importedExtData.TryGetValue(GUID, out PluginData _pluginData))
+				{
+					if (_pluginData.data.TryGetValue("ReferralIndex", out object _loadedReferralIndex) && _loadedReferralIndex != null)
+					{
+						ReferralIndex = (int) _loadedReferralIndex;
+						if (ReferralIndex > -1)
+						{
+							if (ReferralIndex < _coordinateMapping.Count)
+								ReferralIndex = (int) _coordinateMapping[ReferralIndex];
+							else
+								ReferralIndex = -1;
+						}
+					}
+
+					_importedExtData.Remove(GUID);
+
+					_pluginData.version = PluginDataVersion;
+					_pluginData.data["ReferralIndex"] = ReferralIndex;
+					_importedExtData[GUID] = _pluginData;
+				}
+			};
+#endif
 		}
 
 		internal static void DebugMsg(LogLevel LogLevel, string LogMsg)

@@ -10,6 +10,11 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CharacterAccessory.KKS", "src\CharacterAccessory.KKS\CharacterAccessory.KKS.csproj", "{C856F9F4-0D2C-461D-A492-CCB6213CAFBE}"
 EndProject
 Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		src\CharacterAccessory.Core\CharacterAccessory.Core.projitems*{32deb8ce-4af2-4458-ac87-359508c0adae}*SharedItemsImports = 4
+		src\CharacterAccessory.Core\CharacterAccessory.Core.projitems*{5a8fdb27-ffca-4a77-ab0f-afdef9a034ed}*SharedItemsImports = 13
+		src\CharacterAccessory.Core\CharacterAccessory.Core.projitems*{c856f9f4-0d2c-461d-a492-ccb6213cafbe}*SharedItemsImports = 4
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU

@@ -89,6 +89,6 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
-  <Import Project="..\CharacterAccessory.Core\CharacterAccessory.Core.projitems" Label="CharacterAccessory.Core" />
+  <Import Project="..\CharacterAccessory.Core\CharacterAccessory.Core.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

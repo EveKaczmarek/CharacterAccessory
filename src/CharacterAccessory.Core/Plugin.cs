@@ -27,10 +27,6 @@ namespace CharacterAccessory
 	[BepInDependency("com.deathweasel.bepinex.materialeditor", "3.1.2")]
 #endif
 	[BepInIncompatibility("KK_ClothesLoadOption")]
-#if !DEBUG
-	[BepInIncompatibility("com.jim60105.kk.studiocoordinateloadoption")]
-	[BepInIncompatibility("com.jim60105.kk.coordinateloadoption")]
-#endif
 	public partial class CharacterAccessory : BaseUnityPlugin
 	{
 		public const string GUID = "madevil.kk.ca";
@@ -39,7 +35,7 @@ namespace CharacterAccessory
 #else
 		public const string Name = "Character Accessory";
 #endif
-		public const string Version = "1.9.2.0";
+		public const string Version = "1.9.2.1";
 
 		internal static ManualLogSource _logger;
 		internal static CharacterAccessory _instance;
@@ -69,10 +65,24 @@ namespace CharacterAccessory
 
 		private void Start()
 		{
-#if KK && !DEBUG
+#if KK
 			if (JetPack.MoreAccessories.BuggyBootleg)
 			{
+#if DEBUG
+				if (!JetPack.MoreAccessories.Installed)
+				{
+					_logger.LogError($"Backward compatibility in BuggyBootleg MoreAccessories is disabled");
+					return;
+				}
+#else
 				_logger.LogError($"Could not load {Name} {Version} because it is incompatible with MoreAccessories experimental build");
+				return;
+#endif
+			}
+
+			if (!JetPack.CoordinateLoadOption.Safe)
+			{
+				_logger.LogError($"Could not load {Name} {Version} because it is incompatible with outdated CoordinateLoadOption");
 				return;
 			}
 #endif
@@ -81,14 +91,6 @@ namespace CharacterAccessory
 			_hooksInstance["General"] = Harmony.CreateAndPatchAll(typeof(Hooks));
 
 			MoreAccessoriesSupport.Init();
-			if (!MoreAccessoriesSupport._installed)
-			{
-#if KK
-				if (JetPack.MoreAccessories.BuggyBootleg)
-					_logger.LogError($"Backward compatibility in BuggyBootleg MoreAccessories is disabled");
-				return;
-#endif
-			}
 
 			MoreOutfitsSupport.Init();
 			HairAccessoryCustomizerSupport.Init();
